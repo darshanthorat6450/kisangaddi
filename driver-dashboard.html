@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KisanGaadi — Driver Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root{
+      --blue:#1565c0;--blue-mid:#1976d2;--blue-light:#42a5f5;--blue-pale:#e3f2fd;--blue-border:#bbdefb;
+      --green:#2e7d32;--orange:#e65100;--red:#c62828;--purple:#6a1b9a;
+      --text:#1a1a2e;--text-mid:#444;--text-light:#888;
+      --bg:#f0f4fb;--card:#ffffff;
+      --shadow:0 2px 14px rgba(0,0,0,0.07);--shadow-lg:0 8px 32px rgba(0,0,0,0.12);
+      --radius:16px;--radius-sm:10px;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+    h1,h2,h3{font-family:'Sora',sans-serif;}
+
+    /* HEADER */
+    .header{background:linear-gradient(135deg,#0d47a1,var(--blue-mid));color:white;padding:0 30px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.2);}
+    .hbrand{display:flex;align-items:center;gap:10px;}
+    .hbrand h1{font-size:20px;font-weight:700;}
+    .htag{background:rgba(255,255,255,0.18);font-size:11px;padding:2px 8px;border-radius:20px;}
+    .hright{display:flex;align-items:center;gap:14px;}
+    .huser{font-size:13px;opacity:0.9;}
+    .logout-btn{background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;}
+    .logout-btn:hover{background:rgba(255,255,255,0.25);}
+
+    /* ONLINE TOGGLE BAR */
+    .online-bar{background:white;padding:12px 30px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 4px rgba(0,0,0,0.06);flex-wrap:wrap;gap:10px;}
+    .online-status{display:flex;align-items:center;gap:12px;}
+    .status-dot{width:12px;height:12px;border-radius:50%;background:#ccc;transition:all 0.3s;flex-shrink:0;}
+    .status-dot.on{background:#2e7d32;box-shadow:0 0 0 3px rgba(46,125,50,0.2);}
+    .status-text{font-size:14px;font-weight:600;color:var(--text-mid);}
+    .location-live{font-size:11px;color:var(--text-light);}
+    /* Availability pill shown in bar */
+    .avail-pill{background:var(--blue-pale);border:1px solid var(--blue-border);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--blue);display:none;}
+    .avail-pill.show{display:inline-block;}
+    /* Vehicle pill shown in bar */
+    .veh-pill{background:#e8f5e9;border:1px solid #c8e6c9;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;color:var(--green);display:none;}
+    .veh-pill.show{display:inline-block;}
+    .bar-pills{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+    .online-toggle{padding:10px 22px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.2s;}
+    .online-toggle.go-online{background:var(--green);color:white;box-shadow:0 3px 10px rgba(46,125,50,0.3);}
+    .online-toggle.go-offline{background:var(--red);color:white;box-shadow:0 3px 10px rgba(198,40,40,0.25);}
+
+    /* NAV */
+    .nav-tabs{background:white;display:flex;border-bottom:2px solid var(--blue-border);padding:0 30px;overflow-x:auto;}
+    .nav-tab{padding:13px 16px;font-size:13px;font-weight:600;color:var(--text-light);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.2s;white-space:nowrap;}
+    .nav-tab.active{color:var(--blue-mid);border-bottom-color:var(--blue-mid);}
+    .nav-tab:hover{color:var(--blue-mid);}
+    .nav-badge{background:var(--orange);color:white;border-radius:20px;padding:1px 6px;font-size:10px;margin-left:5px;}
+
+    /* STATS */
+    .stats-bar{display:flex;gap:12px;padding:16px 30px;flex-wrap:wrap;}
+    .stat-card{background:var(--card);border-radius:var(--radius-sm);padding:14px 16px;flex:1;min-width:120px;box-shadow:var(--shadow);border-top:3px solid var(--blue-mid);display:flex;align-items:center;gap:10px;}
+    .si{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+    .si-b{background:var(--blue-pale);} .si-g{background:#e8f5e9;} .si-o{background:#fff3e0;} .si-p{background:#f3e5f5;}
+    .si-inf .n{font-size:20px;font-weight:700;color:var(--text);font-family:'Sora',sans-serif;line-height:1;}
+    .si-inf .l{font-size:11px;color:var(--text-light);margin-top:2px;}
+
+    /* PAGES */
+    .page{display:none;padding:0 30px 40px;}
+    .page.active{display:block;}
+    .sec-title{font-size:16px;font-weight:700;color:var(--text);margin:20px 0 12px;display:flex;align-items:center;gap:7px;}
+
+    /* SETTINGS CARD */
+    .settings-card{background:var(--card);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow-lg);margin-bottom:18px;}
+    .settings-card h3{font-size:15px;font-weight:700;margin-bottom:16px;color:var(--text);}
+    .settings-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+    @media(max-width:600px){.settings-row{grid-template-columns:1fr;}}
+    .sg{display:flex;flex-direction:column;}
+    .sg label{font-size:12px;font-weight:700;color:var(--text-mid);margin-bottom:5px;}
+    .sg input,.sg select{padding:10px 12px;border:2px solid #e0e0e0;border-radius:var(--radius-sm);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border 0.2s;background:#fafafa;}
+    .sg input:focus,.sg select:focus{border-color:var(--blue-mid);background:white;}
+    .save-btn{padding:11px 22px;background:linear-gradient(135deg,var(--blue),var(--blue-light));color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;}
+    .save-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(21,101,192,0.3);}
+
+    /* TRIP ROUTE CARD */
+    .trip-route-card{background:linear-gradient(135deg,var(--blue-pale),#f0f7ff);border:1px solid var(--blue-border);border-radius:var(--radius);padding:22px;margin-bottom:18px;}
+    .trip-route-card h3{font-size:14px;font-weight:700;color:var(--blue);margin-bottom:14px;}
+    .trip-ac-wrap{position:relative;margin-bottom:10px;}
+    .trip-ac-wrap input{width:100%;padding:10px 40px 10px 14px;border:2px solid var(--blue-border);border-radius:var(--radius-sm);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;background:white;}
+    .trip-ac-wrap input:focus{border-color:var(--blue-mid);}
+    .trip-gps{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;}
+    .trip-ac-list{position:absolute;top:100%;left:0;right:0;background:white;border:1px solid #ddd;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;z-index:200;box-shadow:0 4px 14px rgba(0,0,0,0.1);display:none;}
+    .trip-ac-list.open{display:block;}
+    .trip-ac-item{padding:9px 12px;cursor:pointer;font-size:12px;color:var(--text-mid);border-bottom:1px solid #f5f5f5;}
+    .trip-ac-item:hover{background:var(--blue-pale);}
+    .trip-dist{font-size:13px;font-weight:600;color:var(--blue);background:white;border-radius:20px;padding:6px 14px;display:inline-flex;gap:7px;margin:8px 0;border:1px solid var(--blue-border);}
+    .set-trip-btn{padding:9px 18px;background:var(--blue);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+    /* ===== NEW: VEHICLE TYPE SELECTOR IN ROUTE ===== */
+    .route-section-card{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:18px;}
+    .route-section-card h3{font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+    .vtcards{display:flex;gap:10px;flex-wrap:wrap;}
+    .vtcard{flex:1;min-width:90px;border:2px solid #e0e0e0;border-radius:var(--radius-sm);padding:14px 8px;text-align:center;cursor:pointer;transition:all 0.2s;background:white;}
+    .vtcard:hover{border-color:var(--blue-mid);background:var(--blue-pale);}
+    .vtcard.on{border-color:var(--blue-mid);background:var(--blue-pale);box-shadow:0 0 0 1px var(--blue-mid);}
+    .vtcard .vc-icon{font-size:28px;margin-bottom:6px;}
+    .vtcard .vc-name{font-size:13px;font-weight:700;color:var(--text);}
+    .vtcard.on .vc-name{color:var(--blue);}
+    .vtcard .vc-cap{font-size:10px;color:var(--text-light);margin-top:2px;}
+    .vtcard .vc-rate{font-size:11px;font-weight:700;color:var(--green);margin-top:4px;background:#e8f5e9;border-radius:10px;padding:2px 7px;display:inline-block;}
+
+    /* ===== NEW: AVAILABILITY TIMING ===== */
+    .avail-card{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:18px;}
+    .avail-card h3{font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+    .avail-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+    @media(max-width:500px){.avail-row{grid-template-columns:1fr;}}
+    .avail-group{display:flex;flex-direction:column;}
+    .avail-group label{font-size:12px;font-weight:700;color:var(--text-mid);margin-bottom:5px;}
+    .avail-group input[type=time]{padding:10px 12px;border:2px solid #e0e0e0;border-radius:var(--radius-sm);font-size:15px;font-family:'DM Sans',sans-serif;outline:none;transition:border 0.2s;background:#fafafa;width:100%;}
+    .avail-group input[type=time]:focus{border-color:var(--blue-mid);background:white;}
+    .avail-days{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;}
+    .day-chip{padding:6px 12px;border:2px solid #e0e0e0;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;background:white;color:var(--text-mid);}
+    .day-chip.on{border-color:var(--blue-mid);background:var(--blue-pale);color:var(--blue);}
+    .avail-save-btn{padding:10px 22px;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;}
+    .avail-save-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(46,125,50,0.3);}
+    .avail-alert{font-size:12px;padding:8px 12px;border-radius:7px;display:none;margin-top:10px;}
+    .avail-alert.success{background:#e8f5e9;color:var(--green);display:block;}
+    .avail-summary{background:linear-gradient(135deg,#e3f2fd,#bbdefb22);border:1px solid var(--blue-border);border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;color:var(--blue);font-weight:600;margin-bottom:14px;display:none;}
+    .avail-summary.show{display:block;}
+
+    /* BOOKING CARDS */
+    .bkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+    .bcard{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);border-left:4px solid #ddd;transition:all 0.2s;position:relative;}
+    .bcard:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px);}
+    .bcard.st-pending{border-left-color:var(--orange);}
+    .bcard.st-accepted{border-left-color:var(--blue);}
+    .bcard.st-picked{border-left-color:var(--purple);}
+    .bcard.st-delivered{border-left-color:var(--green);}
+    .bcard.open-req{border-left-color:#f9a825;background:linear-gradient(135deg,white,#fffde7);}
+    .bc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+    .bc-crop{font-size:16px;font-weight:700;}
+    .sbadge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+    .sbadge.pending{background:#fff3e0;color:var(--orange);}
+    .sbadge.accepted{background:#e3f2fd;color:var(--blue);}
+    .sbadge.picked{background:#f3e5f5;color:var(--purple);}
+    .sbadge.delivered{background:#e8f5e9;color:var(--green);}
+    .sbadge.cancelled{background:#f5f5f5;color:#999;}
+    .sbadge.open{background:#fff9c4;color:#f57f17;}
+    .farmer-info{font-size:12px;color:var(--text-mid);margin:8px 0;background:#f9f9f9;padding:8px 10px;border-radius:7px;}
+    .bc-route{font-size:12px;color:var(--text-mid);margin-bottom:8px;line-height:1.8;}
+    .bc-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+    .btag{font-size:11px;padding:2px 7px;background:#f0f0f0;border-radius:20px;color:var(--text-mid);}
+    .btag.veh{background:#e3f2fd;color:var(--blue);}
+    .bc-footer{display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid #f0f0f0;}
+    .bc-price{font-size:18px;font-weight:800;color:var(--blue);font-family:'Sora',sans-serif;}
+    .bc-actions{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap;}
+    .btn{padding:8px 15px;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;transition:all 0.2s;}
+    .btn-accept{background:#e8f5e9;color:var(--green);}
+    .btn-accept:hover{background:var(--green);color:white;}
+    .btn-claim{background:linear-gradient(135deg,#f9a825,#fbc02d);color:#4a2900;box-shadow:0 2px 8px rgba(249,168,37,0.3);}
+    .btn-claim:hover{transform:translateY(-1px);}
+    .btn-pickup{background:#f3e5f5;color:var(--purple);}
+    .btn-pickup:hover{background:var(--purple);color:white;}
+    .btn-deliver{background:var(--blue-pale);color:var(--blue);}
+    .btn-deliver:hover{background:var(--blue);color:white;}
+
+    /* MAP */
+    #driverMap{height:350px;border-radius:var(--radius);border:2px solid var(--blue-border);margin-top:12px;display:none;}
+
+    /* ALERT */
+    .alert{padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:12px;font-size:13px;display:none;}
+    .alert.success{background:#e8f5e9;color:var(--green);border-left:3px solid var(--green);display:block;}
+    .alert.error{background:#ffebee;color:var(--red);border-left:3px solid var(--red);display:block;}
+    .loading{text-align:center;padding:34px;color:var(--text-light);font-size:13px;}
+    .spin{display:inline-block;width:16px;height:16px;border:2px solid #ddd;border-top-color:var(--blue);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* OPEN REQUESTS SECTION */
+    .open-req-banner{background:linear-gradient(135deg,#fff9c4,#fff3e0);border:1px solid #ffe082;border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;color:#e65100;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+
+    /* PROFILE */
+    .pcard{background:var(--card);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);max-width:480px;}
+    .pav{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-light));display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:12px;}
+    .pname{font-size:19px;font-weight:700;margin-bottom:5px;}
+    .prow{display:flex;gap:7px;align-items:center;font-size:13px;color:var(--text-mid);margin-top:4px;}
+
+    ::-webkit-scrollbar{width:5px;}
+    ::-webkit-scrollbar-thumb{background:var(--blue-border);border-radius:3px;}
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="hbrand">
+    <h1>🚜 KisanGaadi</h1>
+    <span class="htag">Driver</span>
+  </div>
+  <div class="hright">
+    <div class="huser">Welcome, <strong id="driverNameH">Driver</strong></div>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<!-- ONLINE TOGGLE BAR -->
+<div class="online-bar">
+  <div class="online-status">
+    <div class="status-dot" id="statusDot"></div>
+    <div>
+      <div class="status-text" id="statusText">⚫ Offline</div>
+      <div class="location-live" id="locationLive">Turn on to receive bookings</div>
+    </div>
+  </div>
+  <div class="bar-pills">
+    <span class="veh-pill" id="vehiclePill">🚜 —</span>
+    <span class="avail-pill" id="availPill">⏰ —</span>
+  </div>
+  <button class="online-toggle go-online" id="onlineToggle" onclick="toggleOnline()">🟢 Go Online</button>
+</div>
+
+<!-- NAV -->
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="switchTab('home',this)">🏠 Home</div>
+  <div class="nav-tab" onclick="switchTab('openreqs',this)">📢 Open Requests <span class="nav-badge" id="openBadge">0</span></div>
+  <div class="nav-tab" onclick="switchTab('bookings',this)">📋 My Bookings <span class="nav-badge" id="pendBadge">0</span></div>
+  <div class="nav-tab" onclick="switchTab('map',this)">🗺️ My Route</div>
+  <div class="nav-tab" onclick="switchTab('settings',this)">⚙️ Settings</div>
+  <div class="nav-tab" onclick="switchTab('profile',this)">👤 Profile</div>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat-card"><div class="si si-b">🚜</div><div class="si-inf"><div class="n" id="sTrips">0</div><div class="l">Total Trips</div></div></div>
+  <div class="stat-card"><div class="si si-o">⏳</div><div class="si-inf"><div class="n" id="sPend">0</div><div class="l">Pending</div></div></div>
+  <div class="stat-card"><div class="si si-g">✅</div><div class="si-inf"><div class="n" id="sDone">0</div><div class="l">Completed</div></div></div>
+  <div class="stat-card"><div class="si si-p">💰</div><div class="si-inf"><div class="n" id="sEarned">₹0</div><div class="l">Earned</div></div></div>
+</div>
+
+<!-- PAGE: HOME (My Assigned Bookings) -->
+<div class="page active" id="page-home">
+  <div class="sec-title"><span>📦</span> My Booking Requests</div>
+  <div class="bkgrid" id="newRequests"><div class="loading"><span class="spin"></span>Loading requests...</div></div>
+</div>
+
+<!-- PAGE: OPEN REQUESTS (Farmer-posted, no driver yet) -->
+<div class="page" id="page-openreqs">
+  <div class="sec-title"><span>📢</span> Open Trip Requests from Farmers</div>
+  <div class="open-req-banner">📢 These farmers posted trips but haven't selected a driver yet — claim one to get the job!</div>
+  <div class="bkgrid" id="openRequestsList"><div class="loading"><span class="spin"></span>Loading open requests...</div></div>
+</div>
+
+<!-- PAGE: BOOKINGS -->
+<div class="page" id="page-bookings">
+  <div class="sec-title"><span>📋</span> All My Bookings</div>
+  <div class="bkgrid" id="allBookings"><div class="loading"><span class="spin"></span>Loading...</div></div>
+</div>
+
+<!-- PAGE: MAP / ROUTE -->
+<div class="page" id="page-map">
+  <div class="sec-title"><span>🗺️</span> Set My Trip Route</div>
+
+  <!-- VEHICLE TYPE FOR THIS ROUTE -->
+  <div class="route-section-card">
+    <h3>🚗 My Vehicle for Today</h3>
+    <div class="vtcards">
+      <div class="vtcard" id="vtc-Mini Tempo" onclick="setRouteVehicle('Mini Tempo',this)">
+        <div class="vc-icon">🛺</div>
+        <div class="vc-name">Mini Tempo</div>
+        <div class="vc-cap">Up to 1 ton</div>
+        <span class="vc-rate" id="rate-Mini Tempo">₹—/km</span>
+      </div>
+      <div class="vtcard" id="vtc-Truck" onclick="setRouteVehicle('Truck',this)">
+        <div class="vc-icon">🚛</div>
+        <div class="vc-name">Truck</div>
+        <div class="vc-cap">5–10 ton</div>
+        <span class="vc-rate" id="rate-Truck">₹—/km</span>
+      </div>
+      <div class="vtcard" id="vtc-Tractor" onclick="setRouteVehicle('Tractor',this)">
+        <div class="vc-icon">🚜</div>
+        <div class="vc-name">Tractor</div>
+        <div class="vc-cap">Trailer attach</div>
+        <span class="vc-rate" id="rate-Tractor">₹—/km</span>
+      </div>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-light);">
+      ⓘ Selected vehicle will be shown to farmers searching for transport
+    </div>
+  </div>
+
+  <!-- AVAILABILITY TIMING -->
+  <div class="avail-card">
+    <h3>⏰ My Availability Today</h3>
+    <div class="avail-summary" id="availSummary">📅 — &nbsp; ⏰ — to —</div>
+
+    <div class="avail-days" id="dayChips">
+      <div class="day-chip on" onclick="toggleDay(this)" data-day="Mon">Mon</div>
+      <div class="day-chip on" onclick="toggleDay(this)" data-day="Tue">Tue</div>
+      <div class="day-chip on" onclick="toggleDay(this)" data-day="Wed">Wed</div>
+      <div class="day-chip on" onclick="toggleDay(this)" data-day="Thu">Thu</div>
+      <div class="day-chip on" onclick="toggleDay(this)" data-day="Fri">Fri</div>
+      <div class="day-chip on" onclick="toggleDay(this)" data-day="Sat">Sat</div>
+      <div class="day-chip" onclick="toggleDay(this)" data-day="Sun">Sun</div>
+    </div>
+
+    <div class="avail-row">
+      <div class="avail-group">
+        <label>🕗 Available From</label>
+        <input type="time" id="availFrom" value="08:00" oninput="previewAvail()" />
+      </div>
+      <div class="avail-group">
+        <label>🕕 Available Until</label>
+        <input type="time" id="availTo" value="18:00" oninput="previewAvail()" />
+      </div>
+    </div>
+
+    <div class="avail-row">
+      <div class="avail-group">
+        <label>📍 Operating Area / District</label>
+        <input type="text" id="operatingArea" placeholder="e.g. Pune, Nashik, Aurangabad" style="padding:10px 12px;border:2px solid #e0e0e0;border-radius:var(--radius-sm);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border 0.2s;background:#fafafa;width:100%;" />
+      </div>
+      <div class="avail-group">
+        <label>📏 Max Distance (km)</label>
+        <input type="number" id="maxDistance" placeholder="e.g. 100" min="5" max="1000" style="padding:10px 12px;border:2px solid #e0e0e0;border-radius:var(--radius-sm);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border 0.2s;background:#fafafa;width:100%;" />
+      </div>
+    </div>
+
+    <button class="avail-save-btn" onclick="saveAvailability()">💾 Save Availability</button>
+    <div class="avail-alert" id="availAlert"></div>
+  </div>
+
+  <!-- TRIP ROUTE -->
+  <div class="trip-route-card">
+    <h3>📍 Today's Route — Where are you going?</h3>
+    <div id="tripAlert" class="alert"></div>
+    <div class="trip-ac-wrap" style="position:relative;z-index:10;">
+      <input type="text" id="tripFrom" placeholder="From — starting location" autocomplete="off" oninput="handleTripAC('from')" />
+      <button class="trip-gps" onclick="tripGPS('from')">📡</button>
+      <div class="trip-ac-list" id="fromAC"></div>
+    </div>
+    <div class="trip-ac-wrap" style="position:relative;z-index:9;">
+      <input type="text" id="tripTo" placeholder="To — destination market / city" autocomplete="off" oninput="handleTripAC('to')" />
+      <button class="trip-gps" onclick="tripGPS('to')">📡</button>
+      <div class="trip-ac-list" id="toAC"></div>
+    </div>
+    <div class="trip-dist hide" id="tripDistBadge">
+      📏 <span id="tripDistTxt">—</span> &nbsp;|&nbsp; ⏱️ <span id="tripDurTxt">—</span>
+    </div>
+    <button class="set-trip-btn" onclick="saveTrip()">💾 Save Route</button>
+  </div>
+
+  <div id="driverMap"></div>
+  <div style="text-align:center;padding:20px;color:var(--text-light);font-size:13px;" id="mapHint">Go online to see your live location on map 📍</div>
+</div>
+
+<!-- PAGE: SETTINGS -->
+<div class="page" id="page-settings">
+  <div class="sec-title"><span>⚙️</span> Settings & Rates</div>
+
+  <div class="settings-card">
+    <h3>💰 My Price Settings</h3>
+    <div id="settingsAlert" class="alert"></div>
+    <div class="settings-row">
+      <div class="sg">
+        <label>💰 Price per KM (₹)</label>
+        <input type="number" id="pricePerKm" placeholder="e.g. 18" min="5" max="200" />
+      </div>
+      <div class="sg">
+        <label>🚜 Vehicle Type</label>
+        <select id="vehicleTypeEdit">
+          <option value="Mini Tempo">Mini Tempo</option>
+          <option value="Truck">Truck</option>
+          <option value="Tractor">Tractor</option>
+        </select>
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="sg">
+        <label>🔢 Vehicle Number</label>
+        <input type="text" id="vehicleNumberEdit" placeholder="MH12AB1234" />
+      </div>
+      <div class="sg">
+        <label>⭐ Speciality</label>
+        <input type="text" id="specialityEdit" placeholder="e.g. Onion trips, Long distance" />
+      </div>
+    </div>
+    <button class="save-btn" onclick="saveSettings()">💾 Save Changes</button>
+  </div>
+
+  <div class="settings-card">
+    <h3>📱 My Vehicle Info</h3>
+    <div style="font-size:13px;color:var(--text-mid);line-height:2.2;">
+      <div>🚜 Vehicle: <strong id="infoVehicle">—</strong></div>
+      <div>🔢 Number: <strong id="infoNumber">—</strong></div>
+      <div>💰 Rate: <strong id="infoRate">—</strong></div>
+      <div>⭐ Speciality: <strong id="infoSpeciality">—</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: PROFILE -->
+<div class="page" id="page-profile">
+  <div class="sec-title"><span>👤</span> My Profile</div>
+  <div class="pcard">
+    <div class="pav">🚜</div>
+    <div class="pname" id="pName">—</div>
+    <div class="prow">📱 <span id="pMobile">—</span></div>
+    <div class="prow">🚜 <span id="pVehicle">—</span></div>
+    <div class="prow">💰 <span id="pRate">—</span>/km</div>
+    <hr style="border:none;border-top:1px solid #f0f0f0;margin:16px 0;">
+    <div style="font-size:12px;color:var(--text-light);">KisanGaadi Driver Partner ✅</div>
+  </div>
+</div>
+
+<script src="http://localhost:5000/socket.io/socket.io.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const API = 'http://localhost:5000/api';
+  const driverId = localStorage.getItem('userId') || '';
+  const driverName = localStorage.getItem('userName') || 'Driver';
+  const driverMobile = localStorage.getItem('userMobile') || '';
+
+  document.getElementById('driverNameH').innerText = driverName;
+
+  let socket;
+  try{ socket = io('http://localhost:5000'); }catch(e){}
+
+  // STATE
+  let isOnline=false, locationInterval=null;
+  let tripFromC=null, tripToC=null;
+  let dMap=null, dMarker=null, dMapReady=false;
+  let acTimers2={};
+  let driverData={};
+  let routeVehicle='';
+  let selectedDays=['Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  // VEHICLE ICONS & CAPACITIES
+  const vehicleIcons={'Mini Tempo':'🛺','Truck':'🚛','Tractor':'🚜'};
+
+  // LOAD DRIVER DATA
+  async function loadDriverData(){
+    try{
+      const r=await fetch(API+'/drivers/all');
+      const all=await r.json();
+      const me=all.find(d=>d._id===driverId);
+      if(me){
+        driverData=me;
+        const pkm=me.pricePerKm||15;
+        document.getElementById('pricePerKm').value=pkm;
+        document.getElementById('vehicleTypeEdit').value=me.vehicleType||'Mini Tempo';
+        document.getElementById('vehicleNumberEdit').value=me.vehicleNumber||'';
+        document.getElementById('specialityEdit').value=me.speciality||'';
+        document.getElementById('infoVehicle').innerText=me.vehicleType||'—';
+        document.getElementById('infoNumber').innerText=me.vehicleNumber||'—';
+        document.getElementById('infoRate').innerText='₹'+pkm+'/km';
+        document.getElementById('infoSpeciality').innerText=me.speciality||'—';
+        document.getElementById('pName').innerText=me.name;
+        document.getElementById('pMobile').innerText=me.mobile||driverMobile;
+        document.getElementById('pVehicle').innerText=(me.vehicleType||'')+'·'+(me.vehicleNumber||'');
+        document.getElementById('pRate').innerText='₹'+pkm;
+
+        // Set rate display on vehicle cards
+        ['Mini Tempo','Truck','Tractor'].forEach(v=>{
+          document.getElementById('rate-'+v).innerText='₹'+pkm+'/km';
+        });
+
+        // Auto-select driver's own vehicle in route section
+        routeVehicle=me.vehicleType||'Mini Tempo';
+        const vtEl=document.getElementById('vtc-'+routeVehicle);
+        if(vtEl){ vtEl.classList.add('on'); updateVehiclePill(); }
+
+        // Update header pill
+        updateVehiclePill();
+      }
+    }catch(e){}
+  }
+
+  // VEHICLE TYPE IN ROUTE
+  function setRouteVehicle(type, el){
+    routeVehicle=type;
+    document.querySelectorAll('.vtcard').forEach(c=>c.classList.remove('on'));
+    el.classList.add('on');
+    updateVehiclePill();
+  }
+
+  function updateVehiclePill(){
+    const pill=document.getElementById('vehiclePill');
+    if(routeVehicle){
+      pill.innerText=(vehicleIcons[routeVehicle]||'🚜')+' '+routeVehicle;
+      pill.classList.add('show');
+    }
+  }
+
+  // AVAILABILITY
+  function toggleDay(el){
+    el.classList.toggle('on');
+    const day=el.dataset.day;
+    if(el.classList.contains('on')){
+      if(!selectedDays.includes(day)) selectedDays.push(day);
+    } else {
+      selectedDays=selectedDays.filter(d=>d!==day);
+    }
+  }
+
+  function previewAvail(){
+    const f=document.getElementById('availFrom').value;
+    const t=document.getElementById('availTo').value;
+    if(f&&t){
+      const days=selectedDays.join(', ')||'No days selected';
+      document.getElementById('availSummary').innerText='📅 '+days+' &nbsp; ⏰ '+f+' to '+t;
+      document.getElementById('availSummary').classList.add('show');
+    }
+  }
+
+  function saveAvailability(){
+    const f=document.getElementById('availFrom').value;
+    const t=document.getElementById('availTo').value;
+    const area=document.getElementById('operatingArea').value.trim();
+    const maxDist=document.getElementById('maxDistance').value;
+    if(!f||!t){showAvailAlert('⚠️ Please set both From and To times!','error'); return;}
+    if(selectedDays.length===0){showAvailAlert('⚠️ Please select at least one day!','error'); return;}
+
+    // Save to localStorage (can also save to backend later)
+    const avail={from:f, to:t, days:selectedDays, area, maxDist};
+    localStorage.setItem('driverAvailability',JSON.stringify(avail));
+
+    const days=selectedDays.join(', ');
+    const summary=`📅 ${days}  ⏰ ${f} – ${t}${area?' · '+area:''}`;
+    document.getElementById('availSummary').innerText=summary;
+    document.getElementById('availSummary').classList.add('show');
+
+    // Update top bar pill
+    const pill=document.getElementById('availPill');
+    pill.innerText='⏰ '+f+' – '+t;
+    pill.classList.add('show');
+
+    showAvailAlert('✅ Availability saved! Farmers can now see your timing.','success');
+  }
+
+  function showAvailAlert(msg,type){
+    const a=document.getElementById('availAlert');
+    a.className='avail-alert '+type; a.innerText=msg;
+    setTimeout(()=>a.className='avail-alert',4000);
+  }
+
+  // Load saved availability on start
+  function loadSavedAvailability(){
+    const saved=localStorage.getItem('driverAvailability');
+    if(saved){
+      try{
+        const av=JSON.parse(saved);
+        if(av.from) document.getElementById('availFrom').value=av.from;
+        if(av.to) document.getElementById('availTo').value=av.to;
+        if(av.area) document.getElementById('operatingArea').value=av.area;
+        if(av.maxDist) document.getElementById('maxDistance').value=av.maxDist;
+        if(av.days){
+          selectedDays=av.days;
+          document.querySelectorAll('.day-chip').forEach(chip=>{
+            if(av.days.includes(chip.dataset.day)) chip.classList.add('on');
+            else chip.classList.remove('on');
+          });
+        }
+        previewAvail();
+        const pill=document.getElementById('availPill');
+        pill.innerText='⏰ '+av.from+' – '+av.to;
+        pill.classList.add('show');
+      }catch(e){}
+    }
+  }
+
+  // TABS
+  function switchTab(t,el){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(n=>n.classList.remove('active'));
+    document.getElementById('page-'+t).classList.add('active');
+    el.classList.add('active');
+    if(t==='bookings') loadAllBookings();
+    if(t==='home') loadRequests();
+    if(t==='map') initDriverMap();
+    if(t==='openreqs') loadOpenRequests();
+  }
+
+  // ONLINE TOGGLE
+  function toggleOnline(){
+    const btn=document.getElementById('onlineToggle');
+    const dot=document.getElementById('statusDot');
+    const st=document.getElementById('statusText');
+    const ll=document.getElementById('locationLive');
+
+    if(!isOnline){
+      if(!navigator.geolocation){alert('GPS not supported');return;}
+      isOnline=true;
+      btn.className='online-toggle go-offline'; btn.innerText='🔴 Go Offline';
+      dot.classList.add('on'); st.innerText='🟢 Online — Receiving Bookings';
+      locationInterval=setInterval(()=>{
+        navigator.geolocation.getCurrentPosition(pos=>{
+          const {latitude:lat,longitude:lng}=pos.coords;
+          if(socket) socket.emit('driverLocation',{driverId,latitude:lat,longitude:lng});
+          ll.innerText=`📍 Sharing: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          fetch(API+'/drivers/update-location',{
+            method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({driverId,lat,lng,isOnline:true})
+          }).catch(()=>{});
+          if(dMapReady){ dMarker.setLatLng([lat,lng]); dMap.setView([lat,lng],14); }
+        });
+      },4000);
+    }else{
+      clearInterval(locationInterval); isOnline=false;
+      btn.className='online-toggle go-online'; btn.innerText='🟢 Go Online';
+      dot.classList.remove('on'); st.innerText='⚫ Offline';
+      ll.innerText='Turn on to receive bookings';
+      fetch(API+'/drivers/update-location',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({driverId,lat:0,lng:0,isOnline:false})
+      }).catch(()=>{});
+    }
+  }
+
+  // LOAD MY REQUESTS (bookings assigned to me)
+  async function loadRequests(){
+    const c=document.getElementById('newRequests');
+    try{
+      const r=await fetch(API+'/bookings/driver/'+driverId);
+      const bks=await r.json();
+      const pend=bks.filter(b=>b.status==='pending');
+      document.getElementById('sTrips').innerText=bks.length;
+      document.getElementById('sPend').innerText=pend.length;
+      document.getElementById('sDone').innerText=bks.filter(b=>b.status==='delivered').length;
+      const earned=bks.filter(b=>b.status==='delivered').reduce((s,b)=>s+b.estimatedPrice,0);
+      document.getElementById('sEarned').innerText='₹'+earned.toLocaleString('en-IN');
+      document.getElementById('pendBadge').innerText=pend.length;
+      if(!pend.length){c.innerHTML='<div class="loading">No new requests right now ⏳<br><small>Check "Open Requests" tab for farmer-posted trips!</small></div>';return;}
+      c.innerHTML=pend.map(b=>renderBCard(b,'mine')).join('');
+    }catch(e){c.innerHTML='<div class="loading">Error loading</div>';}
+  }
+
+  // LOAD OPEN REQUESTS (farmer-posted, no driver)
+  async function loadOpenRequests(){
+    const c=document.getElementById('openRequestsList');
+    c.innerHTML='<div class="loading"><span class="spin"></span>Loading open requests...</div>';
+    try{
+      const r=await fetch(API+'/bookings/open');
+      const bks=await r.json();
+      document.getElementById('openBadge').innerText=bks.length;
+      if(!bks.length){c.innerHTML='<div class="loading">No open requests right now. Check back soon! 📢</div>';return;}
+      c.innerHTML=bks.map(b=>renderBCard(b,'open')).join('');
+    }catch(e){c.innerHTML='<div class="loading">Error loading. Make sure backend is updated.</div>';}
+  }
+
+  // LOAD ALL BOOKINGS
+  async function loadAllBookings(){
+    const c=document.getElementById('allBookings');
+    c.innerHTML='<div class="loading"><span class="spin"></span>Loading...</div>';
+    try{
+      const r=await fetch(API+'/bookings/driver/'+driverId);
+      const bks=await r.json();
+      if(!bks.length){c.innerHTML='<div class="loading">No bookings yet! 🚜</div>';return;}
+      c.innerHTML=bks.map(b=>renderBCard(b,'mine')).join('');
+    }catch(e){c.innerHTML='<div class="loading">Error loading</div>';}
+  }
+
+  function renderBCard(b, mode){
+    const fn=b.farmer?.name||'Farmer', fm=b.farmer?.mobile||'';
+    const isOpen=(mode==='open');
+    const veh=b.vehicleType||'Any vehicle';
+    return `<div class="bcard ${isOpen?'open-req':'st-'+b.status}">
+      <div class="bc-head">
+        <div>
+          <div class="bc-crop">🌾 ${b.cropType}</div>
+          <div style="font-size:10px;color:#aaa;margin-top:2px;">ID: ${b._id.slice(-8).toUpperCase()}</div>
+        </div>
+        <span class="sbadge ${isOpen?'open':b.status}">${isOpen?'OPEN REQUEST':b.status.toUpperCase()}</span>
+      </div>
+      <div class="farmer-info">👨‍🌾 <strong>${fn}</strong> &nbsp;|&nbsp; 📱 ${fm}</div>
+      <div class="bc-route">
+        <div>🟢 <strong>From:</strong> ${b.pickupLocation.address}</div>
+        <div>🔴 <strong>To:</strong> ${b.dropLocation.address}</div>
+      </div>
+      <div class="bc-meta">
+        <span class="btag">⚖️ ${b.estimatedWeight}kg</span>
+        <span class="btag veh">🚗 ${veh}</span>
+        ${b.distanceKm?`<span class="btag">📏 ${b.distanceKm}km</span>`:''}
+        <span class="btag">${new Date(b.createdAt).toLocaleDateString('en-IN')}</span>
+      </div>
+      <div class="bc-footer">
+        <div class="bc-price">₹${b.estimatedPrice.toLocaleString('en-IN')}</div>
+      </div>
+      <div class="bc-actions">
+        ${isOpen?`<button class="btn btn-claim" onclick="claimOpenRequest('${b._id}')">🙋 Claim This Trip</button>`:''}
+        ${!isOpen&&b.status==='pending'?`
+          <button class="btn btn-accept" onclick="updateStatus('${b._id}','accepted')">✅ Accept Trip</button>
+          <button class="btn" style="background:#ffebee;color:#c62828;" onclick="updateStatus('${b._id}','cancelled')">❌ Reject</button>`:''}
+        ${!isOpen&&b.status==='accepted'?`<button class="btn btn-pickup" onclick="updateStatus('${b._id}','picked')">📦 Picked Up Cargo</button>`:''}
+        ${!isOpen&&b.status==='picked'?`<button class="btn btn-deliver" onclick="updateStatus('${b._id}','delivered')">🏁 Mark Delivered</button>`:''}
+        ${fm?`<button class="btn" style="background:#fff3e0;color:#e65100;" onclick="window.location.href='tel:${fm}'">📞 Call Farmer</button>`:''}
+      </div>
+    </div>`;
+  }
+
+  async function claimOpenRequest(bookingId){
+    if(!confirm('Claim this trip? You will be assigned as the driver.')) return;
+    try{
+      const r=await fetch(API+'/bookings/claim/'+bookingId,{
+        method:'PATCH',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({driverId})
+      });
+      const d=await r.json();
+      if(r.ok){alert('🎉 Trip claimed! Farmer has been notified.'); loadOpenRequests(); loadRequests();}
+      else alert('❌ '+d.message);
+    }catch(e){alert('Error claiming trip');}
+  }
+
+  async function updateStatus(id,status){
+    const msgs={accepted:'Trip accepted! Farmer notified. 🎉',picked:'Marked as Picked Up! 📦',delivered:'Marked as Delivered! 🏁',cancelled:'Booking rejected.'};
+    try{
+      await fetch(API+'/bookings/status/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+      alert(msgs[status]||'Updated!');
+      loadRequests();
+      if(document.getElementById('page-bookings').classList.contains('active')) loadAllBookings();
+    }catch(e){alert('Error updating status');}
+  }
+
+  // SAVE SETTINGS
+  async function saveSettings(){
+    const pkm=parseInt(document.getElementById('pricePerKm').value)||15;
+    const vt=document.getElementById('vehicleTypeEdit').value;
+    const vn=document.getElementById('vehicleNumberEdit').value.trim();
+    const sp=document.getElementById('specialityEdit').value.trim();
+    try{
+      const r=await fetch(API+'/drivers/'+driverId+'/settings',{
+        method:'PATCH',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({pricePerKm:pkm,vehicleType:vt,vehicleNumber:vn,speciality:sp})
+      });
+      const d=await r.json();
+      if(r.ok){
+        showSettingsAlert('✅ Settings saved!','success');
+        document.getElementById('infoVehicle').innerText=vt;
+        document.getElementById('infoNumber').innerText=vn;
+        document.getElementById('infoRate').innerText='₹'+pkm+'/km';
+        document.getElementById('infoSpeciality').innerText=sp;
+        document.getElementById('pRate').innerText='₹'+pkm;
+        ['Mini Tempo','Truck','Tractor'].forEach(v=>{
+          document.getElementById('rate-'+v).innerText='₹'+pkm+'/km';
+        });
+      } else showSettingsAlert(d.message||'Error saving','error');
+    }catch(e){showSettingsAlert('Server error!','error');}
+  }
+
+  function showSettingsAlert(msg,type){
+    const a=document.getElementById('settingsAlert');
+    a.className='alert '+type; a.innerText=msg;
+    setTimeout(()=>{a.className='alert';},4000);
+  }
+
+  // TRIP ROUTE AUTOCOMPLETE
+  const acTimers2={};
+  async function handleTripAC(type){
+    const inp=document.getElementById(type==='from'?'tripFrom':'tripTo');
+    const val=inp.value.trim();
+    if(acTimers2[type]) clearTimeout(acTimers2[type]);
+    if(val.length<3){document.getElementById(type+'AC').classList.remove('open');return;}
+    acTimers2[type]=setTimeout(async()=>{
+      try{
+        const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&limit=5&countrycodes=in`,{headers:{'Accept-Language':'en'}});
+        const d=await r.json();
+        const list=document.getElementById(type+'AC');
+        if(!d||!d.length){list.classList.remove('open');return;}
+        list.innerHTML=d.map(x=>{
+          const pts=x.display_name.split(',');
+          const dn=x.display_name.replace(/'/g,"\\'");
+          return `<div class="trip-ac-item" onclick="pickTrip('${type}',${x.lat},${x.lon},'${dn}')">📍 ${pts[0].trim()}, ${pts[1]?pts[1].trim():''}</div>`;
+        }).join('');
+        list.classList.add('open');
+      }catch(e){}
+    },400);
+  }
+
+  function pickTrip(type,lat,lng,full){
+    const short=full.split(',').slice(0,3).join(',');
+    document.getElementById(type==='from'?'tripFrom':'tripTo').value=short;
+    document.getElementById(type+'AC').classList.remove('open');
+    if(type==='from') tripFromC={lat:+lat,lng:+lng};
+    else tripToC={lat:+lat,lng:+lng};
+    if(tripFromC&&tripToC){
+      const d=haversine(tripFromC.lat,tripFromC.lng,tripToC.lat,tripToC.lng);
+      document.getElementById('tripDistBadge').classList.remove('hide');
+      document.getElementById('tripDistTxt').innerText=d.toFixed(1)+' km';
+      document.getElementById('tripDurTxt').innerText='~'+Math.round(d*2.8)+' min';
+    }
+  }
+
+  function tripGPS(type){
+    if(!navigator.geolocation){alert('GPS not supported');return;}
+    const inp=document.getElementById(type==='from'?'tripFrom':'tripTo');
+    inp.value='📡 Getting...'; inp.disabled=true;
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      const {latitude:lat,longitude:lng}=pos.coords;
+      try{
+        const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+        const d=await r.json();
+        inp.value=d.display_name.split(',').slice(0,3).join(',');
+      }catch(e){inp.value=`${lat.toFixed(4)},${lng.toFixed(4)}`;}
+      if(type==='from') tripFromC={lat,lng};
+      else tripToC={lat,lng};
+      inp.disabled=false;
+    },()=>{inp.value='';inp.disabled=false;});
+  }
+
+  function haversine(la1,lo1,la2,lo2){
+    const R=6371,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180;
+    const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
+
+  function saveTrip(){
+    if(!tripFromC||!tripToC){alert('Select both From and To locations!');return;}
+    localStorage.setItem('tripFrom',document.getElementById('tripFrom').value);
+    localStorage.setItem('tripTo',document.getElementById('tripTo').value);
+    const ta=document.getElementById('tripAlert');
+    ta.className='alert success'; ta.innerText='✅ Trip route saved!';
+    setTimeout(()=>ta.className='alert',4000);
+    initDriverMap();
+  }
+
+  // DRIVER MAP
+  function initDriverMap(){
+    const m=document.getElementById('driverMap');
+    m.style.display='block';
+    document.getElementById('mapHint').style.display='none';
+    if(!dMapReady){
+      dMap=L.map('driverMap').setView([18.5204,73.8567],11);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(dMap);
+      const ic=L.divIcon({html:'<div style="font-size:28px;">🚜</div>',className:'',iconSize:[32,32],iconAnchor:[16,16]});
+      dMarker=L.marker([18.5204,73.8567],{icon:ic}).addTo(dMap).bindPopup('My Location').openPopup();
+      dMapReady=true;
+    }
+    if(tripFromC&&tripToC){
+      L.polyline([[tripFromC.lat,tripFromC.lng],[tripToC.lat,tripToC.lng]],{color:'#1565c0',weight:3,dashArray:'6,6'}).addTo(dMap);
+      const fIc=L.divIcon({html:'🟢',className:'',iconSize:[20,20]});
+      const tIc=L.divIcon({html:'🔴',className:'',iconSize:[20,20]});
+      L.marker([tripFromC.lat,tripFromC.lng],{icon:fIc}).addTo(dMap).bindPopup('Trip Start');
+      L.marker([tripToC.lat,tripToC.lng],{icon:tIc}).addTo(dMap).bindPopup('Trip End');
+      dMap.fitBounds([[tripFromC.lat,tripFromC.lng],[tripToC.lat,tripToC.lng]],{padding:[40,40]});
+    }
+  }
+
+  function logout(){ localStorage.clear(); window.location.href='login.html'; }
+
+  document.addEventListener('click',e=>{
+    if(!e.target.closest('.trip-ac-wrap')) document.querySelectorAll('.trip-ac-list').forEach(l=>l.classList.remove('open'));
+  });
+
+  // INIT
+  loadDriverData();
+  loadSavedAvailability();
+  loadRequests();
+  loadOpenRequests();
+
+  setInterval(()=>{
+    if(document.getElementById('page-home').classList.contains('active')) loadRequests();
+    if(document.getElementById('page-openreqs').classList.contains('active')) loadOpenRequests();
+  },15000);
+</script>
+</body>
+</html>

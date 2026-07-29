@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>KisanGaadi Live Tracking 🚜</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial; background: #f0f7f0; }
+    h1 { color: #2e7d32; text-align: center; padding: 20px; }
+    #map {
+      height: 450px;
+      width: 90%;
+      margin: 0 auto 20px auto;
+      border-radius: 12px;
+      border: 2px solid #2e7d32;
+    }
+    #status {
+      text-align: center;
+      font-size: 18px;
+      color: #555;
+      margin: 10px;
+      padding: 10px;
+    }
+    .btn-container { text-align: center; margin: 15px; }
+    button {
+      padding: 12px 30px;
+      margin: 10px;
+      background: #2e7d32;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover { background: #1b5e20; }
+  </style>
+</head>
+<body>
+
+  <h1>🚜 KisanGaadi Live Tracking</h1>
+  <p id="status">⏳ Waiting for driver location...</p>
+  <div id="map"></div>
+
+  <div class="btn-container">
+    <button onclick="simulateDriver()">📍 Simulate Driver Moving</button>
+    <button onclick="stopSimulation()">⏹️ Stop</button>
+  </div>
+
+  <!-- Leaflet JS (Free, No API Key!) -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Socket.io -->
+  <script src="http://localhost:5000/socket.io/socket.io.js"></script>
+
+  <script>
+    // Initialize Map at Pune
+    const map = L.map('map').setView([18.5204, 73.8567], 14);
+
+    // Free OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Truck marker
+    const truckIcon = L.divIcon({
+      html: '🚜',
+      className: '',
+      iconSize: [30, 30]
+    });
+
+    let marker = L.marker([18.5204, 73.8567], { icon: truckIcon })
+      .addTo(map)
+      .bindPopup('Driver is here!')
+      .openPopup();
+
+    // Update marker position
+    function updateMarker(lat, lng) {
+      marker.setLatLng([lat, lng]);
+      map.setView([lat, lng], 14);
+      document.getElementById('status').innerText =
+        `✅ Driver is at: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
+
+    // Socket.io - listen for location updates
+    const socket = io('http://localhost:5000');
+
+    socket.on('updateLocation', (data) => {
+      updateMarker(data.latitude, data.longitude);
+    });
+
+    // Simulate driver moving
+    let lat = 18.5204;
+    let lng = 73.8567;
+    let intervalId;
+
+    function simulateDriver() {
+      document.getElementById('status').innerText = '🚜 Driver is moving...';
+      intervalId = setInterval(() => {
+        lat += 0.001;
+        lng += 0.001;
+        socket.emit('driverLocation', {
+          driverId: 'driver123',
+          latitude: lat,
+          longitude: lng
+        });
+      }, 2000);
+    }
+
+    function stopSimulation() {
+      clearInterval(intervalId);
+      document.getElementById('status').innerText = '⏹️ Simulation stopped';
+    }
+  </script>
+
+</body>
+</html>

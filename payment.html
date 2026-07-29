@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>KisanGaadi Payment 💳</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial; background: #f0f7f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .card {
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center;
+      width: 350px;
+    }
+    h1 { color: #2e7d32; margin-bottom: 10px; }
+    p { color: #666; margin-bottom: 20px; }
+    .amount { font-size: 36px; font-weight: bold; color: #2e7d32; margin: 20px 0; }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #2e7d32;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover { background: #1b5e20; }
+    #status {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .success { background: #e8f5e9; color: #2e7d32; }
+    .error { background: #ffebee; color: #c62828; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h1>🌾 KisanGaadi</h1>
+  <p>Pay for your crop transport</p>
+  <div class="amount">₹1,500</div>
+  <p>Wheat Transport — Pune to Nashik</p>
+  <button onclick="startPayment()">💳 Pay Now</button>
+  <div id="status"></div>
+</div>
+
+<!-- Razorpay SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+  async function startPayment() {
+    try {
+      // Step 1: Create order on backend
+      const response = await fetch('http://localhost:5000/api/payments/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: 1500,
+          bookingId: '69e77eea1c8adc6631f6843c'
+        })
+      });
+
+      const order = await response.json();
+
+      // Step 2: Open Razorpay payment window
+      const options = {
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'KisanGaadi',
+        description: 'Crop Transport Payment',
+        order_id: order.orderId,
+        handler: async function(response) {
+          // Step 3: Verify payment
+          const verify = await fetch('http://localhost:5000/api/payments/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(response)
+          });
+
+          const result = await verify.json();
+
+          const statusDiv = document.getElementById('status');
+          if (result.success) {
+            statusDiv.className = 'success';
+            statusDiv.innerText = '✅ Payment Successful! Thank you!';
+          } else {
+            statusDiv.className = 'error';
+            statusDiv.innerText = '❌ Payment Failed. Try again.';
+          }
+        },
+        prefill: {
+          name: 'Ramesh Patil',
+          contact: '9876543210'
+        },
+        theme: { color: '#2e7d32' }
+      };
+
+      const rzp = new Razorpay(options);
+      rzp.open();
+
+    } catch (error) {
+      document.getElementById('status').innerText = 'Error: ' + error.message;
+    }
+  }
+</script>
+
+</body>
+</html>

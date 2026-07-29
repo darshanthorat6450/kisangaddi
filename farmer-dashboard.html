@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KisanGaadi — Farmer Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --green:#1a6b2f; --green-mid:#2e7d32; --green-light:#43a047; --green-pale:#e8f5e9; --green-border:#c8e6c9;
+      --blue:#1565c0; --orange:#e65100; --red:#c62828; --purple:#6a1b9a; --gold:#f9a825;
+      --text:#1a1a2e; --text-mid:#444; --text-light:#888;
+      --bg:#f2f5ef; --card:#ffffff;
+      --shadow:0 2px 16px rgba(0,0,0,0.07); --shadow-lg:0 8px 32px rgba(0,0,0,0.12);
+      --radius:16px; --radius-sm:10px;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+    h1,h2,h3{font-family:'Sora',sans-serif;}
+
+    /* HEADER */
+    .header{background:linear-gradient(135deg,var(--green) 0%,var(--green-mid) 100%);color:white;padding:0 30px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.2);}
+    .header-brand{display:flex;align-items:center;gap:10px;}
+    .header-brand h1{font-size:20px;font-weight:700;}
+    .header-tag{background:rgba(255,255,255,0.2);font-size:11px;padding:2px 8px;border-radius:20px;}
+    .header-right{display:flex;align-items:center;gap:16px;}
+    .header-user{font-size:14px;opacity:0.9;}
+    .logout-btn{background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;transition:all 0.2s;}
+    .logout-btn:hover{background:rgba(255,255,255,0.3);}
+
+    /* NAV */
+    .nav-tabs{background:white;display:flex;border-bottom:2px solid var(--green-border);padding:0 30px;box-shadow:0 1px 4px rgba(0,0,0,0.04);overflow-x:auto;}
+    .nav-tab{padding:14px 18px;font-size:14px;font-weight:600;color:var(--text-light);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.2s;white-space:nowrap;}
+    .nav-tab.active{color:var(--green-mid);border-bottom-color:var(--green-mid);}
+    .nav-tab:hover{color:var(--green-mid);}
+    .nav-badge{background:var(--orange);color:white;border-radius:20px;padding:1px 7px;font-size:11px;margin-left:6px;}
+
+    /* STATS */
+    .stats-bar{display:flex;gap:14px;padding:18px 30px;flex-wrap:wrap;}
+    .stat-card{background:var(--card);border-radius:var(--radius-sm);padding:16px 18px;flex:1;min-width:130px;box-shadow:var(--shadow);border-top:3px solid var(--green-mid);display:flex;align-items:center;gap:12px;}
+    .stat-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+    .si-green{background:var(--green-pale);} .si-orange{background:#fff3e0;} .si-blue{background:#e3f2fd;} .si-purple{background:#f3e5f5;}
+    .stat-info .num{font-size:22px;font-weight:700;color:var(--text);font-family:'Sora',sans-serif;line-height:1;}
+    .stat-info .lbl{font-size:11px;color:var(--text-light);margin-top:3px;}
+
+    /* PAGES */
+    .page{display:none;padding:0 30px 40px;}
+    .page.active{display:block;}
+    .sec-title{font-size:17px;font-weight:700;color:var(--text);margin:22px 0 14px;display:flex;align-items:center;gap:8px;}
+
+    /* ===== BOOKING MODE TOGGLE ===== */
+    .booking-mode-bar{display:flex;gap:0;background:#f0f0f0;border-radius:12px;padding:4px;margin-bottom:22px;}
+    .mode-btn{flex:1;padding:11px 16px;border:none;background:transparent;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;color:var(--text-mid);transition:all 0.2s;text-align:center;}
+    .mode-btn.active{background:white;color:var(--green-mid);box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+    .mode-btn.active-open{background:linear-gradient(135deg,#fff9c4,#fff3e0);color:#e65100;box-shadow:0 2px 8px rgba(230,81,0,0.15);}
+
+    /* ===== BOOKING PANEL ===== */
+    .booking-panel{background:var(--card);border-radius:var(--radius);padding:26px;box-shadow:var(--shadow-lg);}
+    .panel-label{font-size:14px;font-weight:700;color:var(--text-mid);margin-bottom:12px;}
+
+    /* ROUTE INPUTS */
+    .route-box{position:relative;margin-bottom:18px;}
+    .route-line{position:absolute;left:19px;top:52px;width:2px;height:calc(100% - 52px);background:repeating-linear-gradient(to bottom,var(--green-mid) 0,var(--green-mid) 5px,transparent 5px,transparent 10px);z-index:0;}
+    .loc-wrap{position:relative;margin-bottom:10px;}
+    .loc-dot{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;z-index:2;}
+    .loc-dot.p{background:var(--green-mid);box-shadow:0 0 0 3px rgba(46,125,50,0.2);}
+    .loc-dot.d{background:var(--red);box-shadow:0 0 0 3px rgba(198,40,40,0.2);}
+    .loc-wrap input{width:100%;padding:13px 42px 13px 38px;border:2px solid #e0e0e0;border-radius:var(--radius-sm);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border 0.2s;background:#fafafa;}
+    .loc-wrap input:focus{border-color:var(--green-mid);background:white;}
+    .loc-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:17px;padding:4px;color:var(--green-mid);}
+    .ac-list{position:absolute;top:100%;left:0;right:0;background:white;border:1px solid #ddd;border-radius:0 0 10px 10px;max-height:210px;overflow-y:auto;z-index:300;box-shadow:0 6px 20px rgba(0,0,0,0.12);display:none;}
+    .ac-list.open{display:block;}
+    .ac-item{padding:10px 14px;cursor:pointer;font-size:13px;color:var(--text-mid);border-bottom:1px solid #f5f5f5;display:flex;gap:10px;align-items:flex-start;}
+    .ac-item:hover{background:var(--green-pale);}
+    .ac-main{font-weight:600;font-size:13px;}
+    .ac-sub{font-size:11px;color:var(--text-light);margin-top:2px;}
+
+    /* DIST BADGE */
+    .dist-badge{background:linear-gradient(135deg,var(--green-pale),#d4edda);border:1px solid var(--green-border);border-radius:30px;padding:7px 16px;display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--green);margin-bottom:18px;}
+    .dist-badge.hide{display:none;}
+
+    /* FORM ROW */
+    .form-row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+    @media(max-width:500px){.form-row2{grid-template-columns:1fr;}}
+    .fg label{display:block;font-size:12px;font-weight:700;color:var(--text-mid);margin-bottom:5px;}
+    .fg select,.fg input[type=number],.fg input[type=text]{width:100%;padding:11px 12px;border:2px solid #e0e0e0;border-radius:var(--radius-sm);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border 0.2s;background:#fafafa;}
+    .fg select:focus,.fg input:focus{border-color:var(--green-mid);background:white;}
+
+    /* VEHICLE CATS */
+    .vcat-row{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+    .vcat{flex:1;min-width:90px;padding:12px 8px;border:2px solid #e0e0e0;border-radius:var(--radius-sm);background:white;cursor:pointer;text-align:center;transition:all 0.2s;font-family:'DM Sans',sans-serif;}
+    .vcat.on{border-color:var(--green-mid);background:var(--green-pale);}
+    .vcat .vi{font-size:26px;margin-bottom:4px;}
+    .vcat .vn{font-size:12px;font-weight:700;color:var(--text);}
+    .vcat .vc{font-size:10px;color:var(--text-light);}
+    .vcat.on .vn{color:var(--green);}
+
+    /* DRIVER LIST */
+    .dlist{display:flex;flex-direction:column;gap:8px;margin-bottom:18px;max-height:320px;overflow-y:auto;}
+    .dopt{border:2px solid #e8e8e8;border-radius:var(--radius-sm);padding:12px 14px;cursor:pointer;background:white;transition:all 0.2s;display:flex;align-items:center;gap:12px;}
+    .dopt:hover{border-color:var(--green-mid);background:var(--green-pale);}
+    .dopt.sel{border-color:var(--green-mid);background:var(--green-pale);box-shadow:0 0 0 1px var(--green-mid);}
+    .d-av{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--green-mid),var(--green-light));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+    .d-name{font-weight:700;font-size:14px;color:var(--text);}
+    .d-veh{font-size:11px;color:var(--text-light);margin-top:2px;}
+    .d-meta{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;}
+    .dtag{font-size:10px;padding:2px 7px;border-radius:20px;background:#f0f0f0;color:var(--text-mid);font-weight:500;}
+    .dtag.on{background:#e8f5e9;color:var(--green);}
+    .dtag.dist{background:#e3f2fd;color:var(--blue);}
+    .d-price-col{text-align:right;flex-shrink:0;margin-left:auto;}
+    .d-rate{font-size:15px;font-weight:700;color:var(--green-mid);}
+    .d-rate-lbl{font-size:10px;color:var(--text-light);}
+    .d-trip{font-size:13px;font-weight:700;color:var(--orange);margin-top:3px;}
+    .no-drivers{text-align:center;padding:24px;color:var(--text-light);font-size:13px;}
+
+    /* PRICE SUMMARY */
+    .price-box{background:linear-gradient(135deg,#f1f8e9,#e8f5e9);border:1px solid var(--green-border);border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:18px;display:none;}
+    .price-box.show{display:block;}
+    .ps-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px;}
+    .ps-row:last-child{margin:0;border-top:1px dashed var(--green-border);padding-top:9px;margin-top:5px;}
+    .ps-lbl{color:var(--text-mid);}
+    .ps-val{font-weight:600;color:var(--text);}
+    .ps-total{font-size:18px;font-weight:800;color:var(--green);font-family:'Sora',sans-serif;}
+
+    .book-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--green-mid),var(--green-light));color:white;border:none;border-radius:var(--radius-sm);font-size:16px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.2s;box-shadow:0 4px 14px rgba(46,125,50,0.3);}
+    .book-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(46,125,50,0.4);}
+    .book-btn:disabled{background:#ccc;cursor:not-allowed;transform:none;box-shadow:none;}
+
+    /* ===== OPEN REQUEST (BROADCAST) SECTION ===== */
+    .open-req-section{display:none;}
+    .open-req-section.show{display:block;}
+    .broadcast-info{background:linear-gradient(135deg,#fff9c4,#fff3e0);border:1px solid #ffe082;border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:18px;font-size:13px;color:#5d4037;line-height:1.7;}
+    .broadcast-info strong{color:var(--orange);}
+    .broadcast-btn{width:100%;padding:15px;background:linear-gradient(135deg,#f9a825,#fbc02d);color:#4a2900;border:none;border-radius:var(--radius-sm);font-size:16px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.2s;box-shadow:0 4px 14px rgba(249,168,37,0.35);}
+    .broadcast-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(249,168,37,0.45);}
+    .broadcast-btn:disabled{background:#ccc;cursor:not-allowed;transform:none;box-shadow:none;}
+
+    /* My Open Requests list */
+    .open-req-card{background:linear-gradient(135deg,white,#fffde7);border:1px solid #ffe082;border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;}
+    .orc-info{}
+    .orc-crop{font-size:15px;font-weight:700;color:var(--text);}
+    .orc-route{font-size:12px;color:var(--text-mid);margin-top:5px;line-height:1.7;}
+    .orc-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:#fff9c4;color:#e65100;margin-top:5px;}
+    .orc-right{text-align:right;}
+    .orc-price{font-size:18px;font-weight:800;color:var(--orange);font-family:'Sora',sans-serif;}
+    .cancel-open-btn{margin-top:7px;padding:6px 14px;background:#ffebee;color:var(--red);border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+    /* BOOKINGS LIST */
+    .bookings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px;}
+    .bcard{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);border-left:4px solid #ddd;transition:all 0.2s;}
+    .bcard:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px);}
+    .bcard.st-pending{border-left-color:var(--orange);}
+    .bcard.st-accepted{border-left-color:var(--blue);}
+    .bcard.st-picked{border-left-color:var(--purple);}
+    .bcard.st-delivered{border-left-color:var(--green-mid);}
+    .bcard.st-cancelled{border-left-color:#ccc;opacity:0.65;}
+    .bcard.st-open{border-left-color:var(--gold);background:linear-gradient(135deg,white,#fffde7);}
+    .bc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+    .bc-crop{font-size:16px;font-weight:700;}
+    .bc-id{font-size:10px;color:var(--text-light);margin-top:2px;}
+    .sbadge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;}
+    .sbadge.pending{background:#fff3e0;color:var(--orange);}
+    .sbadge.accepted{background:#e3f2fd;color:var(--blue);}
+    .sbadge.picked{background:#f3e5f5;color:var(--purple);}
+    .sbadge.delivered{background:#e8f5e9;color:var(--green);}
+    .sbadge.cancelled{background:#f5f5f5;color:#999;}
+    .sbadge.open{background:#fff9c4;color:#e65100;}
+    .bc-route{font-size:12px;color:var(--text-mid);margin-bottom:8px;line-height:1.7;}
+    .bc-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+    .bctag{font-size:11px;padding:2px 8px;background:#f5f5f5;border-radius:20px;color:var(--text-mid);}
+    .bc-footer{display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #f0f0f0;}
+    .bc-price{font-size:18px;font-weight:800;color:var(--green-mid);font-family:'Sora',sans-serif;}
+    .bc-driver{font-size:11px;color:var(--text-light);text-align:right;}
+    .bc-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+    .btn{padding:7px 14px;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;transition:all 0.2s;}
+    .btn-track{background:#e3f2fd;color:var(--blue);}
+    .btn-track:hover{background:var(--blue);color:white;}
+    .btn-pay{background:linear-gradient(135deg,var(--green-mid),var(--green-light));color:white;box-shadow:0 2px 8px rgba(46,125,50,0.25);}
+    .btn-cancel{background:#ffebee;color:var(--red);}
+    .btn-cancel:hover{background:var(--red);color:white;}
+    @keyframes payPulse{0%,100%{box-shadow:0 0 0 0 rgba(46,125,50,0.45);}50%{box-shadow:0 0 0 8px rgba(46,125,50,0);}}
+    .btn-pay{animation:payPulse 2s infinite;}
+    .accepted-note{font-size:11px;color:var(--blue);margin-top:7px;padding:6px 10px;background:#e3f2fd;border-radius:6px;}
+    .open-note{font-size:11px;color:var(--orange);margin-top:7px;padding:6px 10px;background:#fff9c4;border-radius:6px;}
+
+    /* TRACKING */
+    #trackMap{height:400px;border-radius:var(--radius);border:2px solid var(--green-border);display:none;margin-top:14px;}
+    .track-info{background:var(--card);border-radius:var(--radius-sm);padding:14px 18px;box-shadow:var(--shadow);margin-bottom:12px;font-size:14px;color:var(--text-mid);display:none;}
+
+    /* ALERT */
+    .alert{padding:11px 14px;border-radius:var(--radius-sm);margin-bottom:14px;font-size:13px;display:none;}
+    .alert.success{background:#e8f5e9;color:var(--green);border-left:3px solid var(--green-mid);display:block;}
+    .alert.error{background:#ffebee;color:var(--red);border-left:3px solid var(--red);display:block;}
+    .loading{text-align:center;padding:36px;color:var(--text-light);font-size:13px;}
+    .spin{display:inline-block;width:18px;height:18px;border:2px solid #ddd;border-top-color:var(--green-mid);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* PROFILE */
+    .profile-card{background:var(--card);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);max-width:480px;}
+    .pav{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--green-light));display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:14px;}
+    .pname{font-size:20px;font-weight:700;margin-bottom:6px;}
+    .prow{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--text-mid);margin-top:5px;}
+
+    ::-webkit-scrollbar{width:5px;}
+    ::-webkit-scrollbar-thumb{background:var(--green-border);border-radius:3px;}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <h1>🌾 KisanGaadi</h1>
+    <span class="header-tag">Farmer</span>
+  </div>
+  <div class="header-right">
+    <div class="header-user">Namaste, <strong id="farmerNameHeader">Farmer</strong> 👋</div>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="switchTab('book',this)">🚜 Book Transport</div>
+  <div class="nav-tab" onclick="switchTab('bookings',this)">📋 My Bookings <span class="nav-badge" id="activeBadge">0</span></div>
+  <div class="nav-tab" onclick="switchTab('tracking',this)">🗺️ Live Tracking</div>
+  <div class="nav-tab" onclick="switchTab('profile',this)">👤 Profile</div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-card"><div class="stat-icon si-green">📦</div><div class="stat-info"><div class="num" id="sTotal">0</div><div class="lbl">Total Bookings</div></div></div>
+  <div class="stat-card"><div class="stat-icon si-orange">⏳</div><div class="stat-info"><div class="num" id="sActive">0</div><div class="lbl">Active Trips</div></div></div>
+  <div class="stat-card"><div class="stat-icon si-blue">✅</div><div class="stat-info"><div class="num" id="sDone">0</div><div class="lbl">Completed</div></div></div>
+  <div class="stat-card"><div class="stat-icon si-purple">💰</div><div class="stat-info"><div class="num" id="sSpent">₹0</div><div class="lbl">Total Spent</div></div></div>
+</div>
+
+<!-- PAGE: BOOK -->
+<div class="page active" id="page-book">
+  <div class="sec-title"><span>🚜</span> Book Crop Transport</div>
+
+  <!-- BOOKING MODE TOGGLE -->
+  <div class="booking-mode-bar">
+    <button class="mode-btn active" id="modeDirectBtn" onclick="setBookingMode('direct')">
+      🎯 Book a Specific Driver
+    </button>
+    <button class="mode-btn" id="modeBroadcastBtn" onclick="setBookingMode('broadcast')">
+      📢 Post Open Request to All
+    </button>
+  </div>
+
+  <div class="booking-panel">
+    <div id="bookAlert" class="alert"></div>
+
+    <!-- ROUTE — shared for both modes -->
+    <div class="panel-label">📍 Select Route</div>
+    <div class="route-box">
+      <div class="route-line"></div>
+      <div class="loc-wrap" style="position:relative;z-index:10;">
+        <div class="loc-dot p"></div>
+        <input type="text" id="pickupInput" placeholder="Pickup — type village, city, or use GPS 📡" autocomplete="off"
+          oninput="handleAC('pickup')" />
+        <button class="loc-btn" onclick="useGPS('pickup')" title="Use GPS location">📡</button>
+        <div class="ac-list" id="pickupAC"></div>
+      </div>
+      <div class="loc-wrap" style="position:relative;z-index:9;">
+        <div class="loc-dot d"></div>
+        <input type="text" id="dropInput" placeholder="Drop — market, mandi, APMC, destination" autocomplete="off"
+          oninput="handleAC('drop')" />
+        <button class="loc-btn" onclick="useGPS('drop')" title="Use GPS location">📡</button>
+        <div class="ac-list" id="dropAC"></div>
+      </div>
+    </div>
+
+    <div class="dist-badge hide" id="distBadge">
+      📏 <span id="distTxt">0 km</span> &nbsp;|&nbsp; ⏱️ <span id="durTxt">~0 min</span>
+    </div>
+
+    <div class="form-row2">
+      <div class="fg">
+        <label>🌾 Crop Type</label>
+        <select id="cropType" onchange="recalcPrice()">
+          <option value="">Select crop</option>
+          <option>🌾 Wheat</option><option>🍚 Rice</option><option>🎋 Sugarcane</option>
+          <option>🌿 Cotton</option><option>🫘 Soybean</option><option>🧅 Onion</option>
+          <option>🍅 Tomato</option><option>🍇 Grapes</option><option>📦 Other</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>⚖️ Weight (kg)</label>
+        <input type="number" id="wt" placeholder="e.g. 500" min="1" oninput="recalcPrice()" />
+      </div>
+    </div>
+
+    <div class="panel-label">🚗 Vehicle Type Needed</div>
+    <div class="vcat-row">
+      <div class="vcat on" id="vcat-Mini Tempo" onclick="setVType('Mini Tempo',this)">
+        <div class="vi">🛺</div><div class="vn">Mini Tempo</div><div class="vc">Up to 1 ton</div>
+      </div>
+      <div class="vcat" id="vcat-Truck" onclick="setVType('Truck',this)">
+        <div class="vi">🚛</div><div class="vn">Truck</div><div class="vc">5–10 ton</div>
+      </div>
+      <div class="vcat" id="vcat-Tractor" onclick="setVType('Tractor',this)">
+        <div class="vi">🚜</div><div class="vn">Tractor</div><div class="vc">Trailer</div>
+      </div>
+    </div>
+
+    <!-- ===== DIRECT BOOKING SECTION ===== -->
+    <div id="directSection">
+      <div class="panel-label">👨‍🌾 Available Drivers Near You <span id="dCount" style="font-weight:400;color:var(--text-light);font-size:12px;"></span></div>
+      <div class="dlist" id="driversList"><div class="loading"><span class="spin"></span>Loading drivers...</div></div>
+
+      <div class="price-box" id="priceBox">
+        <div class="ps-row"><span class="ps-lbl">📏 Distance</span><span class="ps-val" id="psDist">—</span></div>
+        <div class="ps-row"><span class="ps-lbl">💰 Rate (driver)</span><span class="ps-val" id="psRate">—</span></div>
+        <div class="ps-row"><span class="ps-lbl">⚖️ Extra weight charge</span><span class="ps-val" id="psWt">₹0</span></div>
+        <div class="ps-row"><span class="ps-lbl">💵 Total Estimate</span><span class="ps-total" id="psTotal">₹0</span></div>
+      </div>
+
+      <button class="book-btn" id="bookBtn" onclick="createBooking()" disabled>📦 Book Transport</button>
+    </div>
+
+    <!-- ===== BROADCAST / OPEN REQUEST SECTION ===== -->
+    <div id="broadcastSection" class="open-req-section">
+      <div class="broadcast-info">
+        <strong>📢 How Open Request works:</strong><br>
+        Your trip requirement will be posted to <strong>all nearby available drivers</strong>. The first driver who claims your request gets the job — you don't have to pick a driver yourself!<br><br>
+        ✅ Best for urgent trips &nbsp; ✅ Gets fastest response &nbsp; ✅ Drivers compete for your trip
+      </div>
+
+      <div class="form-row2">
+        <div class="fg">
+          <label>💰 Your Budget (₹) — optional</label>
+          <input type="number" id="broadcastBudget" placeholder="Max you want to pay" min="0" />
+        </div>
+        <div class="fg">
+          <label>📝 Special Instructions</label>
+          <input type="text" id="broadcastNote" placeholder="e.g. Handle with care" />
+        </div>
+      </div>
+
+      <!-- Open request price estimate -->
+      <div class="price-box" id="broadcastPriceBox" style="display:none;">
+        <div class="ps-row"><span class="ps-lbl">📏 Distance</span><span class="ps-val" id="bPsDist">—</span></div>
+        <div class="ps-row"><span class="ps-lbl">💰 Estimated price (avg rate)</span><span class="ps-val" id="bPsEst">—</span></div>
+        <div class="ps-row"><span class="ps-lbl">💵 Your Budget</span><span class="ps-total" id="bPsBudget">—</span></div>
+      </div>
+
+      <button class="broadcast-btn" id="broadcastBtn" onclick="postOpenRequest()">📢 Post Open Request to All Drivers</button>
+
+      <!-- My Open Requests -->
+      <div class="sec-title" style="margin-top:24px;"><span>📋</span> My Open Requests</div>
+      <div id="myOpenRequests"><div class="loading"><span class="spin"></span>Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: BOOKINGS -->
+<div class="page" id="page-bookings">
+  <div class="sec-title"><span>📋</span> My Bookings</div>
+  <div class="bookings-grid" id="bookingsList"><div class="loading"><span class="spin"></span>Loading...</div></div>
+</div>
+
+<!-- PAGE: TRACKING -->
+<div class="page" id="page-tracking">
+  <div class="sec-title"><span>🗺️</span> Live Tracking</div>
+  <div class="track-info" id="trackInfo">📍 Waiting for driver location updates...</div>
+  <div id="trackMap"></div>
+  <div style="text-align:center;padding:40px;color:var(--text-light);" id="noTrack">No active trip. Book a transport to track driver live! 🚜</div>
+</div>
+
+<!-- PAGE: PROFILE -->
+<div class="page" id="page-profile">
+  <div class="sec-title"><span>👤</span> My Profile</div>
+  <div class="profile-card">
+    <div class="pav">🧑‍🌾</div>
+    <div class="pname" id="pName">—</div>
+    <div class="prow">📱 <span id="pMobile">—</span></div>
+    <div class="prow">🏘️ <span id="pVillage">—</span></div>
+    <hr style="border:none;border-top:1px solid #f0f0f0;margin:18px 0;">
+    <div style="font-size:12px;color:var(--text-light);">KisanGaadi Farmer Member ✅</div>
+  </div>
+</div>
+
+<script src="http://localhost:5000/socket.io/socket.io.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  const API = 'http://localhost:5000/api';
+  const farmerId = localStorage.getItem('userId') || '';
+  const farmerName = localStorage.getItem('userName') || 'Farmer';
+  const farmerMobile = localStorage.getItem('userMobile') || '';
+
+  document.getElementById('farmerNameHeader').innerText = farmerName;
+  document.getElementById('pName').innerText = farmerName;
+  document.getElementById('pMobile').innerText = farmerMobile;
+
+  let socket;
+  try{ socket = io('http://localhost:5000'); }catch(e){}
+
+  // STATE
+  let pCoords=null, dCoords=null, distKm=0;
+  let selDriver=null;
+  let allDrivers=[];
+  let selVType='Mini Tempo';
+  let bookingMode='direct'; // 'direct' or 'broadcast'
+  let acTimers={};
+  let trackMap=null, trackMarker=null, trackReady=false;
+
+  // ===== BOOKING MODE =====
+  function setBookingMode(mode){
+    bookingMode=mode;
+    document.getElementById('modeDirectBtn').className='mode-btn'+(mode==='direct'?' active':'');
+    document.getElementById('modeBroadcastBtn').className='mode-btn'+(mode==='broadcast'?' active-open':'');
+    document.getElementById('directSection').style.display=mode==='direct'?'block':'none';
+    document.getElementById('broadcastSection').className='open-req-section'+(mode==='broadcast'?' show':'');
+    if(mode==='broadcast'){
+      loadMyOpenRequests();
+      updateBroadcastPrice();
+    }
+    recalcPrice();
+  }
+
+  // ===== ROUTE AUTOCOMPLETE =====
+  async function handleAC(type){
+    const inp=document.getElementById(type==='pickup'?'pickupInput':'dropInput');
+    const val=inp.value.trim();
+    const listId=type==='pickup'?'pickupAC':'dropAC';
+    if(acTimers[type]) clearTimeout(acTimers[type]);
+    if(val.length<3){document.getElementById(listId).classList.remove('open');return;}
+    acTimers[type]=setTimeout(async()=>{
+      try{
+        const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&limit=6&countrycodes=in`,{headers:{'Accept-Language':'en'}});
+        const d=await r.json();
+        const list=document.getElementById(listId);
+        if(!d||!d.length){list.classList.remove('open');return;}
+        list.innerHTML=d.map(x=>{
+          const parts=x.display_name.split(',');
+          const dn=x.display_name.replace(/'/g,"\\'");
+          return `<div class="ac-item" onclick="pickLoc('${type}',${x.lat},${x.lon},'${dn}')">
+            <div><div class="ac-main">📍 ${parts[0].trim()}</div><div class="ac-sub">${parts.slice(1,3).join(',').trim()}</div></div>
+          </div>`;
+        }).join('');
+        list.classList.add('open');
+      }catch(e){}
+    },380);
+  }
+
+  function pickLoc(type,lat,lng,full){
+    const short=full.split(',').slice(0,3).join(', ');
+    document.getElementById(type==='pickup'?'pickupInput':'dropInput').value=short;
+    document.getElementById(type==='pickup'?'pickupAC':'dropAC').classList.remove('open');
+    if(type==='pickup') pCoords={lat:+lat,lng:+lng};
+    else dCoords={lat:+lat,lng:+lng};
+    if(pCoords&&dCoords){
+      distKm=haversine(pCoords.lat,pCoords.lng,dCoords.lat,dCoords.lng);
+      const badge=document.getElementById('distBadge');
+      badge.classList.remove('hide');
+      document.getElementById('distTxt').innerText=distKm.toFixed(1)+' km';
+      document.getElementById('durTxt').innerText='~'+Math.round(distKm/40*60)+' min';
+      renderDrivers();
+      recalcPrice();
+      updateBroadcastPrice();
+    }
+  }
+
+  function useGPS(type){
+    if(!navigator.geolocation){alert('GPS not available');return;}
+    const inp=document.getElementById(type==='pickup'?'pickupInput':'dropInput');
+    inp.value='📡 Getting location...'; inp.disabled=true;
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      const {latitude:lat,longitude:lng}=pos.coords;
+      try{
+        const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+        const d=await r.json();
+        inp.value=d.display_name.split(',').slice(0,3).join(', ');
+      }catch(e){inp.value=`${lat.toFixed(4)}, ${lng.toFixed(4)}`;}
+      if(type==='pickup') pCoords={lat,lng};
+      else dCoords={lat,lng};
+      inp.disabled=false;
+      if(pCoords&&dCoords){
+        distKm=haversine(pCoords.lat,pCoords.lng,dCoords.lat,dCoords.lng);
+        document.getElementById('distBadge').classList.remove('hide');
+        document.getElementById('distTxt').innerText=distKm.toFixed(1)+' km';
+        document.getElementById('durTxt').innerText='~'+Math.round(distKm/40*60)+' min';
+        renderDrivers();
+        recalcPrice();
+        updateBroadcastPrice();
+      }
+    },()=>{inp.value=''; inp.disabled=false; alert('Could not get GPS location');});
+  }
+
+  // ===== VEHICLE TYPE =====
+  function setVType(type,el){
+    selVType=type; selDriver=null;
+    document.querySelectorAll('.vcat').forEach(c=>c.classList.remove('on'));
+    el.classList.add('on');
+    renderDrivers();
+    recalcPrice();
+  }
+
+  // ===== LOAD & RENDER DRIVERS =====
+  async function loadDrivers(){
+    try{
+      const r=await fetch(API+'/drivers/all');
+      allDrivers=await r.json();
+      renderDrivers();
+    }catch(e){}
+  }
+
+  function haversine(la1,lo1,la2,lo2){
+    const R=6371,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180;
+    const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
+
+  function renderDrivers(){
+    const c=document.getElementById('driversList');
+    if(!allDrivers.length){c.innerHTML='<div class="no-drivers">No drivers found</div>';return;}
+
+    // Attach distance from farmer's pickup location
+    let drivers=allDrivers.map(d=>({
+      ...d,
+      distFromPickup: pCoords
+        ? haversine(pCoords.lat,pCoords.lng, d.currentLat||18.5204, d.currentLng||73.8567)
+        : 999
+    }));
+
+    // Filter by vehicle type
+    drivers=drivers.filter(d=>d.vehicleType===selVType);
+
+    // Sort nearest first (priority)
+    drivers.sort((a,b)=>a.distFromPickup-b.distFromPickup);
+
+    document.getElementById('dCount').innerText='('+drivers.length+' found)';
+
+    if(!drivers.length){
+      c.innerHTML=`<div class="no-drivers">No ${selVType} drivers available right now.<br>Try a different vehicle type or post an Open Request!</div>`;
+      return;
+    }
+
+    c.innerHTML=drivers.map(d=>{
+      const initials=(d.name||'D').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+      const pkm=d.pricePerKm||15;
+      const tripCost=distKm?Math.round(distKm*pkm):null;
+      const eta=Math.round(d.distFromPickup/30*60);
+      const isNear=d.distFromPickup<10;
+      return `<div class="dopt ${selDriver&&selDriver._id===d._id?'sel':''}" onclick="selDrv(this,'${d._id}')">
+        <div class="d-av">${initials}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="d-name">${d.name}</div>
+          <div class="d-veh">${d.vehicleType} · ${d.vehicleNumber||'—'}</div>
+          <div class="d-meta">
+            ${d.isOnline?'<span class="dtag on">🟢 Online</span>':'<span class="dtag">⚪ Offline</span>'}
+            <span class="dtag dist">${isNear?'📍 '+d.distFromPickup.toFixed(1)+'km away':'🛣️ '+d.distFromPickup.toFixed(0)+'km'}</span>
+            ${eta<60?`<span class="dtag">⏱️ ~${eta}min</span>`:''}
+            ${d.speciality?`<span class="dtag">⭐ ${d.speciality}</span>`:''}
+          </div>
+        </div>
+        <div class="d-price-col">
+          <div class="d-rate">₹${pkm}/km</div>
+          <div class="d-rate-lbl">rate</div>
+          ${tripCost?`<div class="d-trip">₹${tripCost.toLocaleString('en-IN')} trip</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function selDrv(el,id){
+    selDriver=allDrivers.find(d=>d._id===id);
+    document.querySelectorAll('.dopt').forEach(e=>e.classList.remove('sel'));
+    el.classList.add('sel');
+    recalcPrice();
+  }
+
+  function recalcPrice(){
+    const wt=parseInt(document.getElementById('wt').value)||0;
+    const crop=document.getElementById('cropType').value;
+    const btn=document.getElementById('bookBtn');
+
+    if(bookingMode==='broadcast'){ btn&&(btn.disabled=true); return; }
+    if(!selDriver||!distKm||!crop||!wt){btn.disabled=true; document.getElementById('priceBox').classList.remove('show'); return;}
+
+    const pkm=selDriver.pricePerKm||15;
+    const base=Math.round(distKm*pkm);
+    const wtCharge=wt>500?Math.round((wt-500)*0.5):0;
+    const total=base+wtCharge;
+
+    document.getElementById('psDist').innerText=distKm.toFixed(1)+' km';
+    document.getElementById('psRate').innerText='₹'+pkm+'/km';
+    document.getElementById('psWt').innerText=wtCharge?'₹'+wtCharge:'₹0';
+    document.getElementById('psTotal').innerText='₹'+total.toLocaleString('en-IN');
+    document.getElementById('priceBox').classList.add('show');
+    btn.disabled=false;
+  }
+
+  function updateBroadcastPrice(){
+    if(!distKm) return;
+    const avgRate=allDrivers.length
+      ? Math.round(allDrivers.reduce((s,d)=>s+(d.pricePerKm||15),0)/allDrivers.length)
+      : 18;
+    const estPrice=Math.round(distKm*avgRate);
+    const budget=document.getElementById('broadcastBudget')?.value;
+    document.getElementById('bPsDist').innerText=distKm.toFixed(1)+' km';
+    document.getElementById('bPsEst').innerText='~₹'+estPrice.toLocaleString('en-IN')+' (avg ₹'+avgRate+'/km)';
+    document.getElementById('bPsBudget').innerText=budget?'₹'+parseInt(budget).toLocaleString('en-IN'):'Not set';
+    document.getElementById('broadcastPriceBox').style.display='block';
+  }
+
+  // ===== CREATE DIRECT BOOKING =====
+  async function createBooking(){
+    const wt=parseInt(document.getElementById('wt').value);
+    const crop=document.getElementById('cropType').value;
+    if(!pCoords||!dCoords){showAlert('Please select pickup and drop locations!','error');return;}
+    if(!selDriver){showAlert('Please select a driver!','error');return;}
+    if(!crop){showAlert('Please select crop type!','error');return;}
+    if(!wt||wt<1){showAlert('Please enter weight!','error');return;}
+    const pkm=selDriver.pricePerKm||15;
+    const price=Math.round(distKm*pkm)+(wt>500?Math.round((wt-500)*0.5):0);
+    const btn=document.getElementById('bookBtn');
+    btn.disabled=true; btn.innerHTML='<span class="spin"></span>Booking...';
+    try{
+      const r=await fetch(API+'/bookings/create',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          farmer:farmerId, driver:selDriver._id,
+          pickupLocation:{address:document.getElementById('pickupInput').value, latitude:pCoords.lat, longitude:pCoords.lng},
+          dropLocation:{address:document.getElementById('dropInput').value, latitude:dCoords.lat, longitude:dCoords.lng},
+          cropType:crop,
+          estimatedWeight:wt, estimatedPrice:price,
+          distanceKm:parseFloat(distKm.toFixed(2)),
+          vehicleType:selVType
+        })
+      });
+      const data=await r.json();
+      if(r.ok){
+        showAlert('🎉 Booking confirmed! Driver notified.','success');
+        resetForm();
+        setTimeout(()=>{switchTab('bookings',document.querySelectorAll('.nav-tab')[1]);},1600);
+      } else showAlert(data.message||'Error','error');
+    }catch(e){ showAlert('Server error!','error'); }
+    btn.disabled=false; btn.innerHTML='📦 Book Transport';
+  }
+
+  // ===== POST OPEN REQUEST =====
+  async function postOpenRequest(){
+    const wt=parseInt(document.getElementById('wt').value);
+    const crop=document.getElementById('cropType').value;
+    const budget=parseInt(document.getElementById('broadcastBudget').value)||0;
+    const note=document.getElementById('broadcastNote').value.trim();
+    if(!pCoords||!dCoords){showAlert('Please select pickup and drop locations!','error');return;}
+    if(!crop){showAlert('Please select crop type!','error');return;}
+    if(!wt||wt<1){showAlert('Please enter weight!','error');return;}
+
+    const avgRate=allDrivers.length
+      ? Math.round(allDrivers.reduce((s,d)=>s+(d.pricePerKm||15),0)/allDrivers.length)
+      : 18;
+    const estPrice=budget||Math.round(distKm*avgRate);
+
+    const btn=document.getElementById('broadcastBtn');
+    btn.disabled=true; btn.innerHTML='<span class="spin"></span>Posting...';
+    try{
+      const r=await fetch(API+'/bookings/create',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          farmer:farmerId,
+          driver:null,  // null = open request, no driver assigned yet
+          pickupLocation:{address:document.getElementById('pickupInput').value, latitude:pCoords.lat, longitude:pCoords.lng},
+          dropLocation:{address:document.getElementById('dropInput').value, latitude:dCoords.lat, longitude:dCoords.lng},
+          cropType:crop,
+          estimatedWeight:wt, estimatedPrice:estPrice,
+          distanceKm:parseFloat(distKm.toFixed(2)),
+          vehicleType:selVType,
+          budget, note,
+          isOpenRequest:true
+        })
+      });
+      const data=await r.json();
+      if(r.ok){
+        showAlert('📢 Open request posted! All nearby drivers have been notified.','success');
+        document.getElementById('wt').value='';
+        document.getElementById('cropType').value='';
+        document.getElementById('broadcastBudget').value='';
+        document.getElementById('broadcastNote').value='';
+        loadMyOpenRequests();
+      } else showAlert(data.message||'Error','error');
+    }catch(e){ showAlert('Server error!','error'); }
+    btn.disabled=false; btn.innerHTML='📢 Post Open Request to All Drivers';
+  }
+
+  // ===== LOAD MY OPEN REQUESTS =====
+  async function loadMyOpenRequests(){
+    const c=document.getElementById('myOpenRequests');
+    try{
+      const r=await fetch(API+'/bookings/farmer/'+farmerId);
+      const all=await r.json();
+      const open=all.filter(b=>!b.driver&&b.status==='pending');
+      if(!open.length){c.innerHTML='<div class="loading">No open requests posted yet.</div>';return;}
+      c.innerHTML=open.map(b=>`
+        <div class="open-req-card">
+          <div class="orc-info">
+            <div class="orc-crop">🌾 ${b.cropType} · ${b.estimatedWeight}kg</div>
+            <div class="orc-route">
+              🟢 ${b.pickupLocation.address}<br>
+              🔴 ${b.dropLocation.address}
+            </div>
+            <span class="orc-badge">📢 WAITING FOR DRIVER</span>
+          </div>
+          <div class="orc-right">
+            <div class="orc-price">₹${b.estimatedPrice.toLocaleString('en-IN')}</div>
+            <button class="cancel-open-btn" onclick="cancelBk('${b._id}')">❌ Cancel</button>
+          </div>
+        </div>
+      `).join('');
+    }catch(e){c.innerHTML='<div class="loading">Error loading</div>';}
+  }
+
+  function resetForm(){
+    document.getElementById('pickupInput').value='';
+    document.getElementById('dropInput').value='';
+    document.getElementById('cropType').value='';
+    document.getElementById('wt').value='';
+    pCoords=null;dCoords=null;distKm=0;selDriver=null;
+    document.getElementById('distBadge').classList.add('hide');
+    document.getElementById('priceBox').classList.remove('show');
+    document.getElementById('bookBtn').disabled=true;
+    document.querySelectorAll('.dopt').forEach(e=>e.classList.remove('sel'));
+  }
+
+  // ===== LOAD ALL BOOKINGS =====
+  async function loadBookings(){
+    const c=document.getElementById('bookingsList');
+    c.innerHTML='<div class="loading"><span class="spin"></span>Loading...</div>';
+    try{
+      const r=await fetch(API+'/bookings/farmer/'+farmerId);
+      const bks=await r.json();
+      document.getElementById('sTotal').innerText=bks.length;
+      const active=bks.filter(b=>['pending','accepted','picked'].includes(b.status));
+      document.getElementById('sActive').innerText=active.length;
+      document.getElementById('sDone').innerText=bks.filter(b=>b.status==='delivered').length;
+      const spent=bks.filter(b=>b.status==='delivered').reduce((s,b)=>s+b.estimatedPrice,0);
+      document.getElementById('sSpent').innerText='₹'+spent.toLocaleString('en-IN');
+      document.getElementById('activeBadge').innerText=active.length;
+      if(!bks.length){c.innerHTML='<div class="loading" style="grid-column:1/-1">No bookings yet! 🌾</div>';return;}
+      c.innerHTML=bks.map(b=>{
+        const isOpen=!b.driver;
+        const dn=b.driver?.name||'—', dv=b.driver?.vehicleType||'';
+        const isActive=['pending','accepted','picked'].includes(b.status);
+        const showPay=b.status==='accepted'||b.status==='delivered';
+        return `<div class="bcard st-${isOpen?'open':b.status}">
+          <div class="bc-head">
+            <div><div class="bc-crop">🌾 ${b.cropType}</div><div class="bc-id">ID: ${b._id.slice(-8).toUpperCase()}</div></div>
+            <span class="sbadge ${isOpen?'open':b.status}">${isOpen?'OPEN REQUEST':b.status.toUpperCase()}</span>
+          </div>
+          <div class="bc-route">
+            <div>🟢 ${b.pickupLocation.address}</div>
+            <div>🔴 ${b.dropLocation.address}</div>
+          </div>
+          <div class="bc-meta">
+            <span class="bctag">⚖️ ${b.estimatedWeight}kg</span>
+            ${b.vehicleType?`<span class="bctag">🚗 ${b.vehicleType}</span>`:''}
+            ${b.distanceKm?`<span class="bctag">📏 ${b.distanceKm}km</span>`:''}
+            <span class="bctag">${new Date(b.createdAt).toLocaleDateString('en-IN')}</span>
+          </div>
+          <div class="bc-footer">
+            <div class="bc-price">₹${b.estimatedPrice.toLocaleString('en-IN')}</div>
+            <div class="bc-driver">${isOpen?'⏳ Waiting...':'🚜 '+dn+'<br><span style="opacity:0.7;">'+dv+'</span>'}</div>
+          </div>
+          <div class="bc-actions">
+            ${isActive&&!isOpen?`<button class="btn btn-track" onclick="goTrack()">🗺️ Track</button>`:''}
+            ${showPay?`<button class="btn btn-pay" onclick="pay('${b._id}',${b.estimatedPrice})">💳 Pay ₹${b.estimatedPrice.toLocaleString('en-IN')}</button>`:''}
+            ${b.status==='pending'?`<button class="btn btn-cancel" onclick="cancelBk('${b._id}')">❌ Cancel</button>`:''}
+          </div>
+          ${isOpen?`<div class="open-note">📢 Posted as Open Request — waiting for a driver to claim this trip!</div>`:''}
+          ${b.status==='accepted'&&!isOpen?`<div class="accepted-note">✅ Driver accepted! Pay now to confirm.</div>`:''}
+        </div>`;
+      }).join('');
+    }catch(e){ c.innerHTML='<div class="loading">Error loading. Is server running?</div>'; }
+  }
+
+  async function cancelBk(id){
+    if(!confirm('Cancel this booking?')) return;
+    await fetch(API+'/bookings/status/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'cancelled'})});
+    loadBookings();
+    loadMyOpenRequests();
+  }
+
+  // PAYMENT
+  async function pay(id,amount){
+    try{
+      const r=await fetch(API+'/payments/create-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount,bookingId:id})});
+      const order=await r.json();
+      new Razorpay({key:order.keyId,amount:order.amount,currency:order.currency,name:'KisanGaadi',description:'Crop Transport',order_id:order.orderId,
+        handler:()=>{alert('✅ Payment done!');loadBookings();},
+        prefill:{name:farmerName,contact:farmerMobile},theme:{color:'#2e7d32'}}).open();
+    }catch(e){alert('Payment error: '+e.message);}
+  }
+
+  // TRACKING
+  function goTrack(){
+    switchTab('tracking',document.querySelectorAll('.nav-tab')[2]);
+    initTrack();
+  }
+
+  function initTrack(){
+    document.getElementById('noTrack').style.display='none';
+    document.getElementById('trackInfo').style.display='block';
+    const m=document.getElementById('trackMap');
+    m.style.display='block';
+    if(!trackReady){
+      trackMap=L.map('trackMap').setView([18.5204,73.8567],13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(trackMap);
+      const ic=L.divIcon({html:'<div style="font-size:28px;">🚜</div>',className:'',iconSize:[32,32],iconAnchor:[16,16]});
+      trackMarker=L.marker([18.5204,73.8567],{icon:ic}).addTo(trackMap).bindPopup('Driver is here!');
+      trackReady=true;
+    }
+    if(socket){
+      socket.off('updateLocation');
+      socket.on('updateLocation',data=>{
+        trackMarker.setLatLng([data.latitude,data.longitude]);
+        trackMap.setView([data.latitude,data.longitude],14);
+        document.getElementById('trackInfo').innerText=`📍 Driver at: ${data.latitude.toFixed(5)}, ${data.longitude.toFixed(5)} — Live`;
+      });
+    }
+  }
+
+  function switchTab(t,el){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(n=>n.classList.remove('active'));
+    document.getElementById('page-'+t).classList.add('active');
+    el.classList.add('active');
+    if(t==='bookings') loadBookings();
+    if(t==='tracking') initTrack();
+  }
+
+  function showAlert(msg,type){
+    const a=document.getElementById('bookAlert');
+    a.className='alert '+type; a.innerText=msg;
+    setTimeout(()=>{a.className='alert';},5000);
+  }
+
+  function logout(){ localStorage.clear(); window.location.href='login.html'; }
+
+  document.addEventListener('click',e=>{
+    if(!e.target.closest('.loc-wrap')) document.querySelectorAll('.ac-list').forEach(l=>l.classList.remove('open'));
+  });
+
+  // INIT
+  loadDrivers();
+  loadBookings();
+  setInterval(()=>{
+    const active=document.getElementById('page-bookings').classList.contains('active');
+    if(active) loadBookings();
+  }, 10000);
+</script>
+</body>
+</html>

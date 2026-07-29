@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KisanGaadi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'DM Sans',sans-serif;background:#fff;min-height:100vh;overflow-x:hidden;}
+
+    /* ── SPLASH ── */
+    #splash{position:fixed;inset:0;background:#e8f5e9;display:flex;flex-direction:column;align-items:center;justify-content:space-between;z-index:1000;transition:opacity 0.5s;}
+    #splash.hide{opacity:0;pointer-events:none;}
+    .splash-top{flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;width:100%;padding:40px 30px 0;}
+    .splash-logo{display:flex;align-items:center;gap:10px;}
+    .splash-logo .icon{font-size:32px;}
+    .splash-logo .name{font-family:'Sora',sans-serif;font-size:26px;font-weight:800;color:#1a6b2f;}
+    .splash-illo{flex:1;display:flex;align-items:flex-end;justify-content:center;width:100%;padding-bottom:0;overflow:hidden;}
+    .splash-illo svg{width:100%;max-width:420px;}
+    .splash-bottom{background:white;width:100%;border-radius:24px 24px 0 0;padding:32px 28px 40px;box-shadow:0 -4px 30px rgba(0,0,0,0.08);}
+    .splash-title{font-family:'Sora',sans-serif;font-size:26px;font-weight:700;color:#111;margin-bottom:8px;line-height:1.3;}
+    .splash-sub{font-size:14px;color:#888;margin-bottom:24px;}
+    .splash-btn{width:100%;padding:16px;background:#111;color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;}
+    .splash-btn:hover{background:#1a6b2f;}
+    .splash-terms{font-size:12px;color:#aaa;margin-top:14px;text-align:center;line-height:1.6;}
+    .splash-terms a{color:#1a6b2f;text-decoration:none;}
+
+    /* ── MAIN AUTH CARD ── */
+    #authCard{min-height:100vh;display:flex;flex-direction:column;}
+    .auth-header{padding:20px 20px 10px;display:flex;align-items:center;gap:14px;}
+    .back-btn{width:40px;height:40px;border-radius:50%;border:none;background:#f5f5f5;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;}
+    .auth-header-title{font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:#111;}
+    .auth-body{flex:1;padding:0 24px 24px;}
+    .auth-title{font-family:'Sora',sans-serif;font-size:24px;font-weight:700;color:#111;margin-bottom:8px;line-height:1.3;}
+    .auth-sub{font-size:14px;color:#888;margin-bottom:32px;line-height:1.5;}
+
+    /* Role Toggle */
+    .role-toggle{display:flex;background:#f5f5f5;border-radius:12px;padding:4px;margin-bottom:28px;}
+    .role-btn{flex:1;padding:11px;border:none;background:transparent;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;color:#888;transition:all 0.2s;font-family:'DM Sans',sans-serif;}
+    .role-btn.active{background:white;color:#1a6b2f;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+
+    /* Phone Input */
+    .phone-wrap{display:flex;align-items:center;border:2px solid #e0e0e0;border-radius:12px;padding:0 14px;height:56px;transition:border 0.2s;margin-bottom:16px;}
+    .phone-wrap:focus-within{border-color:#1a6b2f;}
+    .flag{font-size:20px;margin-right:8px;}
+    .country-code{font-size:15px;font-weight:600;color:#111;margin-right:10px;border-right:1px solid #ddd;padding-right:10px;}
+    .phone-wrap input{flex:1;border:none;outline:none;font-size:16px;font-family:'DM Sans',sans-serif;color:#111;background:transparent;}
+
+    /* Form fields */
+    .field{margin-bottom:14px;}
+    .field label{display:block;font-size:12px;font-weight:700;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;}
+    .field input,.field select{width:100%;padding:14px;border:2px solid #eeee;border-radius:12px;font-size:15px;font-family:'DM Sans',sans-serif;outline:none;transition:border 0.2s;background:#fafafa;color:#111;}
+    .field input:focus,.field select:focus{border-color:#1a6b2f;background:white;}
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+    /* OTP Boxes */
+    .otp-wrap{display:flex;gap:12px;margin-bottom:24px;}
+    .otp-box{flex:1;height:56px;border:2px solid #e0e0e0;border-radius:12px;text-align:center;font-size:22px;font-weight:700;outline:none;transition:border 0.2s;font-family:'Sora',sans-serif;}
+    .otp-box:focus{border-color:#1a6b2f;}
+    .otp-timer{font-size:13px;color:#888;margin-bottom:20px;}
+    .otp-resend{color:#1a6b2f;font-weight:600;cursor:pointer;border:none;background:none;font-size:13px;font-family:'DM Sans',sans-serif;}
+
+    /* Submit */
+    .submit-btn{width:100%;padding:16px;background:#111;color:white;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;transition:all 0.2s;margin-top:8px;}
+    .submit-btn:hover{background:#1a6b2f;}
+    .submit-btn:disabled{background:#ccc;cursor:not-allowed;}
+
+    /* Mode toggle */
+    .mode-switch{text-align:center;margin-top:20px;font-size:14px;color:#888;}
+    .mode-switch a{color:#1a6b2f;font-weight:600;cursor:pointer;text-decoration:none;}
+
+    /* Status */
+    .status-msg{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:14px;display:none;}
+    .status-msg.success{background:#e8f5e9;color:#1a6b2f;display:block;}
+    .status-msg.error{background:#ffebee;color:#c62828;display:block;}
+
+    /* ── STEP INDICATOR ── */
+    .steps{display:flex;gap:6px;margin-bottom:28px;}
+    .step-dot{height:4px;border-radius:2px;flex:1;background:#eee;transition:background 0.3s;}
+    .step-dot.active{background:#1a6b2f;}
+
+    /* Section show/hide */
+    .screen{display:none;}
+    .screen.show{display:block;}
+  </style>
+</head>
+<body>
+
+<!-- ════ SPLASH SCREEN ════ -->
+<div id="splash">
+  <div class="splash-top">
+    <div class="splash-logo">
+      <span class="icon">🌾</span>
+      <span class="name">KisanGaadi</span>
+    </div>
+  </div>
+
+  <div class="splash-illo">
+    <svg viewBox="0 0 400 280" xmlns="http://www.w3.org/2000/svg">
+      <!-- Sky -->
+      <rect width="400" height="280" fill="#e8f5e9"/>
+      <!-- Sun -->
+      <circle cx="340" cy="50" r="30" fill="#fff9c4" opacity="0.8"/>
+      <!-- Clouds -->
+      <ellipse cx="80" cy="60" rx="40" ry="18" fill="white" opacity="0.7"/>
+      <ellipse cx="110" cy="55" rx="30" ry="14" fill="white" opacity="0.7"/>
+      <!-- Hills -->
+      <ellipse cx="50" cy="240" rx="120" ry="80" fill="#a5d6a7"/>
+      <ellipse cx="350" cy="260" rx="110" ry="70" fill="#81c784"/>
+      <!-- Road -->
+      <rect x="0" y="210" width="400" height="70" fill="#546e7a"/>
+      <rect x="180" y="230" width="40" height="8" fill="#ffeb3b" rx="4"/>
+      <rect x="180" y="252" width="40" height="8" fill="#ffeb3b" rx="4"/>
+      <!-- Fields -->
+      <rect x="0" y="170" width="400" height="45" fill="#66bb6a"/>
+      <!-- Tractor body -->
+      <rect x="140" y="155" width="80" height="45" rx="6" fill="#f9a825"/>
+      <rect x="200" y="143" width="50" height="35" rx="4" fill="#ff8f00"/>
+      <!-- Tractor window -->
+      <rect x="207" y="149" width="36" height="22" rx="3" fill="#b3e5fc"/>
+      <!-- Tractor wheels -->
+      <circle cx="160" cy="205" r="22" fill="#37474f"/>
+      <circle cx="160" cy="205" r="12" fill="#546e7a"/>
+      <circle cx="225" cy="208" r="16" fill="#37474f"/>
+      <circle cx="225" cy="208" r="8" fill="#546e7a"/>
+      <!-- Exhaust -->
+      <rect x="215" y="130" width="6" height="18" rx="3" fill="#37474f"/>
+      <ellipse cx="218" cy="126" rx="6" ry="4" fill="#bdbdbd" opacity="0.6"/>
+      <!-- Crop bags on tractor -->
+      <rect x="148" y="138" width="20" height="20" rx="3" fill="#8d6e63"/>
+      <rect x="172" y="136" width="20" height="22" rx="3" fill="#795548"/>
+      <!-- Farmer -->
+      <circle cx="320" cy="170" r="16" fill="#ffcc80"/>
+      <rect x="308" y="186" width="24" height="30" rx="4" fill="#388e3c"/>
+      <rect x="305" y="186" width="8" height="22" rx="3" fill="#388e3c"/>
+      <rect x="320" y="186" width="8" height="22" rx="3" fill="#388e3c"/>
+      <!-- Hat -->
+      <ellipse cx="320" cy="157" rx="20" ry="5" fill="#f57f17"/>
+      <rect x="313" y="152" width="14" height="10" rx="2" fill="#f57f17"/>
+      <!-- Stars/sparkles -->
+      <text x="60" y="100" font-size="14" opacity="0.5">✦</text>
+      <text x="300" y="80" font-size="10" opacity="0.4">✦</text>
+      <text x="350" y="120" font-size="8" opacity="0.3">✦</text>
+    </svg>
+  </div>
+
+  <div class="splash-bottom">
+    <div class="splash-title">Fasal ko Mandi tak<br>Aasani se Pahunchao</div>
+    <div class="splash-sub">India ka #1 Agricultural Transport App</div>
+    <button class="splash-btn" onclick="showAuth()">📱 Continue with Phone Number</button>
+    <div class="splash-terms">
+      By continuing, you agree to our <a href="#">T&Cs</a> and <a href="#">Privacy Policy</a>
+    </div>
+  </div>
+</div>
+
+<!-- ════ AUTH FLOW ════ -->
+<div id="authCard" style="display:none;">
+
+  <div class="auth-header">
+    <button class="back-btn" onclick="goBack()">←</button>
+    <div class="auth-header-title" id="authHeaderTitle">Login / Register</div>
+  </div>
+
+  <div class="auth-body">
+    <div id="statusMsg" class="status-msg"></div>
+
+    <!-- Step dots -->
+    <div class="steps">
+      <div class="step-dot active" id="dot1"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div class="step-dot" id="dot3"></div>
+    </div>
+
+    <!-- ── SCREEN 1: Role & Phone ── -->
+    <div class="screen show" id="s1">
+      <div class="auth-title">Choose your role &<br>Enter phone number</div>
+      <div class="auth-sub">We'll send you a verification code</div>
+
+      <div class="role-toggle">
+        <button class="role-btn active" id="roleF" onclick="setRole('farmer',this)">🧑‍🌾 Farmer</button>
+        <button class="role-btn" id="roleD" onclick="setRole('driver',this)">🚜 Driver</button>
+      </div>
+
+      <div class="phone-wrap">
+        <span class="flag">🇮🇳</span>
+        <span class="country-code">+91</span>
+        <input type="tel" id="phoneInput" placeholder="Mobile Number" maxlength="10" oninput="checkPhone()" />
+      </div>
+
+      <button class="submit-btn" id="phoneBtn" onclick="submitPhone()" disabled>Next →</button>
+    </div>
+
+    <!-- ── SCREEN 2: Password / OTP ── -->
+    <div class="screen" id="s2">
+      <div class="auth-title" id="s2Title">Enter Password</div>
+      <div class="auth-sub" id="s2Sub">Enter your account password</div>
+
+      <!-- Login password -->
+      <div id="loginForm">
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="loginPwd" placeholder="Enter password" />
+        </div>
+        <button class="submit-btn" onclick="doLogin()">Login →</button>
+        <div class="mode-switch" style="margin-top:16px;">
+          New user? <a onclick="showRegisterForm()">Create account</a>
+        </div>
+      </div>
+
+      <!-- Register form -->
+      <div id="registerForm" style="display:none;">
+        <div class="field">
+          <label>Full Name</label>
+          <input type="text" id="regName" placeholder="Aapka naam" />
+        </div>
+
+        <!-- Farmer extra fields -->
+        <div id="farmerFields">
+          <div class="field-row">
+            <div class="field">
+              <label>Village</label>
+              <input type="text" id="regVillage" placeholder="Gaon" />
+            </div>
+            <div class="field">
+              <label>District</label>
+              <input type="text" id="regDistrict" placeholder="Jila" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Driver extra fields -->
+        <div id="driverFields" style="display:none;">
+          <div class="field-row">
+            <div class="field">
+              <label>Vehicle Type</label>
+              <select id="regVehicleType">
+                <option value="">Select</option>
+                <option value="Mini Tempo">Mini Tempo</option>
+                <option value="Truck">Truck</option>
+                <option value="Tractor">Tractor</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Vehicle No.</label>
+              <input type="text" id="regVehicleNo" placeholder="MH12AB1234" />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Price/KM (₹)</label>
+              <input type="number" id="regPrice" placeholder="e.g. 18" />
+            </div>
+            <div class="field">
+              <label>Speciality</label>
+              <input type="text" id="regSpeciality" placeholder="Onion trips" />
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="regPwd" placeholder="Create password" />
+        </div>
+
+        <button class="submit-btn" onclick="doRegister()">Create Account 🌾</button>
+        <div class="mode-switch" style="margin-top:16px;">
+          Already have account? <a onclick="showLoginForm()">Login</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:5000/api';
+  let currentRole = 'farmer';
+  let currentPhone = '';
+  let currentStep = 1;
+
+  // SPLASH → AUTH
+  function showAuth() {
+    document.getElementById('splash').classList.add('hide');
+    setTimeout(() => {
+      document.getElementById('splash').style.display = 'none';
+      document.getElementById('authCard').style.display = 'flex';
+      document.getElementById('authCard').style.flexDirection = 'column';
+    }, 500);
+  }
+
+  function goBack() {
+    if (currentStep === 2) {
+      goStep(1);
+    } else {
+      document.getElementById('authCard').style.display = 'none';
+      document.getElementById('splash').style.display = 'flex';
+      document.getElementById('splash').classList.remove('hide');
+    }
+  }
+
+  function setRole(role, el) {
+    currentRole = role;
+    document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('farmerFields').style.display = role === 'farmer' ? 'block' : 'none';
+    document.getElementById('driverFields').style.display = role === 'driver' ? 'block' : 'none';
+  }
+
+  function checkPhone() {
+    const v = document.getElementById('phoneInput').value.trim();
+    document.getElementById('phoneBtn').disabled = v.length !== 10;
+  }
+
+  function submitPhone() {
+    currentPhone = document.getElementById('phoneInput').value.trim();
+    if (currentPhone.length !== 10) return;
+    goStep(2);
+    showLoginForm();
+  }
+
+  function goStep(n) {
+    currentStep = n;
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
+    document.getElementById('s' + n).classList.add('show');
+    for (let i = 1; i <= 3; i++) {
+      document.getElementById('dot' + i).classList.toggle('active', i <= n);
+    }
+  }
+
+  function showLoginForm() {
+    document.getElementById('loginForm').style.display = 'block';
+    document.getElementById('registerForm').style.display = 'none';
+    document.getElementById('s2Title').innerText = 'Welcome back! 👋';
+    document.getElementById('s2Sub').innerText = `Enter password for +91 ${currentPhone}`;
+  }
+
+  function showRegisterForm() {
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('registerForm').style.display = 'block';
+    document.getElementById('s2Title').innerText = 'Create Account';
+    document.getElementById('s2Sub').innerText = `Setting up for +91 ${currentPhone}`;
+    document.getElementById('farmerFields').style.display = currentRole === 'farmer' ? 'block' : 'none';
+    document.getElementById('driverFields').style.display = currentRole === 'driver' ? 'block' : 'none';
+  }
+
+  function showStatus(msg, type) {
+    const el = document.getElementById('statusMsg');
+    el.className = 'status-msg ' + type;
+    el.innerText = msg;
+    setTimeout(() => el.className = 'status-msg', 4000);
+  }
+
+  async function doLogin() {
+    const pwd = document.getElementById('loginPwd').value.trim();
+    if (!pwd) return showStatus('Password daalen!', 'error');
+    try {
+      const r = await fetch(`${API}/${currentRole}s/login`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobile: currentPhone, password: pwd })
+      });
+      const d = await r.json();
+      if (r.ok) {
+        const u = d.farmer || d.driver;
+        localStorage.setItem('userId', u._id);
+        localStorage.setItem('userName', u.name);
+        localStorage.setItem('userRole', currentRole);
+        localStorage.setItem('userMobile', u.mobile);
+        if (currentRole === 'driver') {
+          localStorage.setItem('driverVehicleType', u.vehicleType || '');
+          localStorage.setItem('driverPricePerKm', u.pricePerKm || 15);
+        }
+        showStatus('✅ Welcome ' + u.name + '!', 'success');
+        setTimeout(() => {
+          window.location.href = currentRole === 'farmer' ? 'farmer-dashboard.html' : 'driver-dashboard.html';
+        }, 1000);
+      } else showStatus('❌ ' + d.message, 'error');
+    } catch (e) { showStatus('❌ Server se connect nahi ho pa raha!', 'error'); }
+  }
+
+  async function doRegister() {
+    const name = document.getElementById('regName').value.trim();
+    const pwd = document.getElementById('regPwd').value.trim();
+    if (!name || !pwd) return showStatus('Sabhi fields bharein!', 'error');
+
+    let body = { name, mobile: currentPhone, password: pwd };
+    if (currentRole === 'farmer') {
+      body.village = document.getElementById('regVillage').value.trim();
+      body.address = document.getElementById('regDistrict').value.trim();
+    } else {
+      body.vehicleType = document.getElementById('regVehicleType').value;
+      body.vehicleNumber = document.getElementById('regVehicleNo').value.trim();
+      body.pricePerKm = parseInt(document.getElementById('regPrice').value) || 15;
+      body.speciality = document.getElementById('regSpeciality').value.trim();
+      if (!body.vehicleType) return showStatus('Vehicle type select karein!', 'error');
+    }
+
+    try {
+      const r = await fetch(`${API}/${currentRole}s/register`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const d = await r.json();
+      if (r.ok) {
+        showStatus('✅ Account created! Ab login karein.', 'success');
+        setTimeout(() => showLoginForm(), 1500);
+      } else showStatus('❌ ' + d.message, 'error');
+    } catch (e) { showStatus('❌ Server error!', 'error'); }
+  }
+</script>
+</body>
+</html>
