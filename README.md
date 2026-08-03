@@ -1,20 +1,7 @@
 🚜 Kisangaddi
 Kisangaddi (branded in-app as KisanGaadi — "Fasal ko Mandi tak, Aasani se Pahunchao") is an agri-logistics platform that connects farmers with nearby drivers (mini tempo, truck, or tractor) to transport crops from farm to market. It supports real-time driver tracking, distance-based fare estimation, in-app payments, and SMS notifications.
 The app has a Hindi/Hinglish-first UI aimed at Indian farmers and local transport drivers.
----
-📸 Screenshots
-**Splash Screen	Login / Register**
-![Splash Screen](files%20(1)/01-splash-screen.png)
-![Login Register](files%20(1)/02-login-register.png)
 
-**Farmer Dashboard	Book Crop Transport**
-![Farmer dashboard](files%20(1)/03-farmer-dashboard.png)
-
-![Book crop transport form](files%20(1)/04-book-transport.png)
-
-Driver Dashboard	Payment Checkout
-![Driver dashboard](files%20(1)/05-driver-dashboard.png)	![Razorpay payment checkout](files%20(1)/06-payment-checkout.png)
----
 ✨ Features
 Core
 Farmer & Driver accounts — phone-number based registration/login with hashed passwords (bcrypt), role toggle (Farmer 🧑‍🌾 / Driver 🚜) on a single splash + auth screen
@@ -169,3 +156,18 @@ Restrict Socket.io CORS origin from `*` to your actual frontend domain
 ---
 📄 License
 ISC
+
+---
+📸 Screenshots
+**Splash Screen	Login / Register**
+![Splash Screen](files%20(1)/01-splash-screen.png)
+![Login Register](files%20(1)/02-login-register.png)
+
+**Farmer Dashboard	Book Crop Transport**
+![Farmer dashboard](files%20(1)/03-farmer-dashboard.png)
+
+![Book crop transport form](files%20(1)/04-book-transport.png)
+
+Driver Dashboard	Payment Checkout
+![Driver dashboard](files%20(1)/05-driver-dashboard.png)	![Razorpay payment checkout](files%20(1)/06-payment-checkout.png)
+---
