@@ -4,7 +4,7 @@ The app has a Hindi/Hinglish-first UI aimed at Indian farmers and local transpor
 ---
 📸 Screenshots
 Splash Screen	Login / Register
-![Splash screen](screenshots/01-splash-screen.png)	![Login and register](screenshots/02-login-register.png)
+![Splash screen](files (1)/01-splash-screen.png)	![Login and register](screenshots/02-login-register.png)
 
 Farmer Dashboard	Book Crop Transport
 ![Farmer dashboard](screenshots/03-farmer-dashboard.png)	![Book crop transport form](screenshots/04-book-transport.png)
