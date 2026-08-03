@@ -162,7 +162,7 @@ ISC
 ---
 📸 Screenshots
 **Splash Screen	Login / Register**
-![Splash Screen](files%10(1)/01-splash-screen.png)
+![Splash Screen](files%20(1)/01-splash-screen.png)
 ![Login Register](files%20(1)/02-login-register.png)
 
 **Farmer Dashboard	Book Crop Transport**
