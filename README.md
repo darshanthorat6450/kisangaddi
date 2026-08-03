@@ -3,9 +3,10 @@ Kisangaddi (branded in-app as KisanGaadi — "Fasal ko Mandi tak, Aasani se Pahu
 The app has a Hindi/Hinglish-first UI aimed at Indian farmers and local transport drivers.
 ---
 📸 Screenshots
-Splash Screen	Login / Register
+**Splash Screen	Login / Register**
 ![Splash Screen](files%20(1)/01-splash-screen.png)
 ![Login Register](files%20(1)/02-login-register.png)
+
 **Farmer Dashboard	Book Crop Transport**
 ![Farmer dashboard](files%20(1)/03-farmer-dashboard.png)
 
