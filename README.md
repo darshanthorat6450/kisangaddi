@@ -12,7 +12,7 @@ Farmer Dashboard	Book Crop Transport
 ![Book crop transport form]<img src="files (1)/02-login-register.png" alt="Sign In page" width="600"/>
 
 Driver Dashboard	Payment Checkout
-![Driver dashboard](files%20(1)/05-driver-dashboard.png)	![Razorpay payment checkout](screenshots/06-payment-checkout.png)
+![Driver dashboard](files%20(1)/05-driver-dashboard.png)	![Razorpay payment checkout](files%20/06-payment-checkout.png)
 ---
 ✨ Features
 Core
