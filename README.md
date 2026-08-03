@@ -2,6 +2,7 @@
 Kisangaddi (branded in-app as KisanGaadi — "Fasal ko Mandi tak, Aasani se Pahunchao") is an agri-logistics platform that connects farmers with nearby drivers (mini tempo, truck, or tractor) to transport crops from farm to market. It supports real-time driver tracking, distance-based fare estimation, in-app payments, and SMS notifications.
 The app has a Hindi/Hinglish-first UI aimed at Indian farmers and local transport drivers.
 
+
 ✨ Features
 Core
 Farmer & Driver accounts — phone-number based registration/login with hashed passwords (bcrypt), role toggle (Farmer 🧑‍🌾 / Driver 🚜) on a single splash + auth screen
@@ -28,6 +29,7 @@ Real-time	Socket.io
 Auth	bcryptjs, jsonwebtoken
 Payments	Razorpay (Checkout.js on frontend, Orders API on backend)
 SMS	Fast2SMS (via axios)
+
 ---
 📁 Project Structure
 ```
@@ -160,7 +162,7 @@ ISC
 ---
 📸 Screenshots
 **Splash Screen	Login / Register**
-![Splash Screen](files%20(1)/01-splash-screen.png)
+![Splash Screen](files%10(1)/01-splash-screen.png)
 ![Login Register](files%20(1)/02-login-register.png)
 
 **Farmer Dashboard	Book Crop Transport**
