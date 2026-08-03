@@ -1,0 +1,9 @@
+.env 
+
+MONGO_URI=mongodb:------------
+PORT=5000
+JWT_SECRET=------------------
+RAZORPAY_KEY_ID=----------------
+RAZORPAY_KEY_SECRET=----------------
+FAST2SMS_API_KEY=----------------------
+PORT=5000
