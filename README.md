@@ -9,7 +9,7 @@ files (1)/01-splash-screen.png  screenshots/files (1)/02-login-register.png
 Farmer Dashboard	Book Crop Transport
 ![Farmer dashboard](files%20(1)/01-splash-screen.png)
 
-![Book crop transport form](files%20(1)/02-driver-dashboard.png)
+![Book crop transport form](files%20(1)/02-login-register.png)
 
 Driver Dashboard	Payment Checkout
 ![Driver dashboard](files%20(1)/05-driver-dashboard.png)	![Razorpay payment checkout](files%20(1)/06-payment-checkout.png)
