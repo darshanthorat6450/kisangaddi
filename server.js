@@ -10,22 +10,18 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: '*' }
 });
-
 // Middleware
 app.use(cors());
 app.use(express.json());
-
 // MongoDB Connect
 mongoose.connect('mongodb://localhost:27017/kisangaadi')
   .then(() => console.log('MongoDB Connected ✅'))
   .catch(err => console.log(err));
-
 // Routes
 app.use('/api/farmers', require('./routes/farmers'));
 app.use('/api/drivers', require('./routes/drivers'));
 app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/payments', require('./routes/payments'));
-
 // Test route
 app.get('/', (req, res) => {
   res.send('KisanGaadi Backend is Running! 🚜');
