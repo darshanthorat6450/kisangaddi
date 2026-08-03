@@ -7,7 +7,7 @@ Splash Screen	Login / Register
 files (1)/01-splash-screen.png  screenshots/files (1)/02-login-register.png
 
 Farmer Dashboard	Book Crop Transport
-![Farmer dashboard](files%20(1)/01-driver-dashboard.png)
+![Farmer dashboard](files%20(1)/01-splash-screen.png)
 
 ![Book crop transport form](files%20(1)/02-driver-dashboard.png)
 
